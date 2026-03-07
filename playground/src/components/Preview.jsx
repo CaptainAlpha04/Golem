@@ -91,7 +91,10 @@ export function Preview({ code, theme, onSvgReady }) {
   return (
     <div className="preview-pane">
       {loading && (
-        <p className="preview-loading">Waiting for Math.js…</p>
+        <div className="preview-loading">
+          <span className="preview-loading-icon">◈</span>
+          <span>Loading engine…</span>
+        </div>
       )}
 
       {error && !loading && (

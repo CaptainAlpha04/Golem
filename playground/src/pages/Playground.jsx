@@ -1,8 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+﻿import { useState, useRef, useCallback } from 'react';
 import { Editor }  from '../components/Editor.jsx';
 import { Preview } from '../components/Preview.jsx';
-import { Toolbar } from '../components/Toolbar.jsx';
-import { useTheme } from '../App.jsx';
+import { useTheme, ExportCtx } from '../App.jsx';
 
 // ── Example snippets (the "gallery" examples shown on load) ──────────────
 
@@ -80,7 +79,9 @@ export function Playground() {
 
   const [code, setCode]               = useState(DEFAULT_CODE);
   const [renderedCode, setRenderedCode] = useState(DEFAULT_CODE);
+  const [activeExample, setActiveExample] = useState(EXAMPLES[0].label);
 
+  const [hasSvg, setHasSvg]           = useState(false);
   const handleCodeChange = (newCode) => {
     setCode(newCode);
     clearTimeout(debounceRef.current);
@@ -89,21 +90,11 @@ export function Playground() {
 
   const handleSvgReady = useCallback((el) => {
     svgRef.current = el;
+    setHasSvg(!!el);
   }, []);
 
-  // Expose svgRef and code to Toolbar via a context update trick — pass them
-  // as props through a sibling-accessible mechanism. We wrap Toolbar here
-  // with the extra props via an inner wrapper since Toolbar is also rendered
-  // in Layout. Instead, we pass them down via a portaled context.
-  // Simpler approach: render a *second* Toolbar child inside the page that
-  // gets the props it needs, OR lift state. Here we use a local override
-  // via a context extender.
-  //
-  // Simplest working approach: re-export a PlaygroundToolbar that wraps
-  // Toolbar with the data it needs.
-  // →  We just render the actions inline in a footer bar instead.
-
   return (
+    <ExportCtx.Provider value={{ svgRef, code, hasSvg }}>
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Example gallery */}
       <div className="example-bar">
@@ -111,8 +102,8 @@ export function Playground() {
         {EXAMPLES.map(ex => (
           <button
             key={ex.label}
-            className="example-chip"
-            onClick={() => { setCode(ex.code); setRenderedCode(ex.code); }}
+            className={`example-chip${activeExample === ex.label ? ' active' : ''}`}
+            onClick={() => { setCode(ex.code); setRenderedCode(ex.code); setActiveExample(ex.label); }}
           >
             {ex.label}
           </button>
@@ -134,7 +125,7 @@ export function Playground() {
         <div className="panel">
           <div className="panel-header">
             <span className="panel-label">Preview</span>
-            <ExportBar svgRef={svgRef} code={code} />
+            <ExportBar svgRef={svgRef} code={code} hasSvg={hasSvg} />
           </div>
           <Preview
             code={renderedCode}
@@ -144,8 +135,29 @@ export function Playground() {
         </div>
       </div>
     </div>
+    </ExportCtx.Provider>
   );
 }
+
+// ── Inline icons ───────────────────────────────────────────────────────────
+
+const CopyIcon  = () => (
+  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="5" y="5" width="9" height="10" rx="1.5"/>
+    <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H4"/>
+  </svg>
+);
+const DlIcon    = () => (
+  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M8 2v9M5 8l3 3 3-3"/>
+    <path d="M2 14h12"/>
+  </svg>
+);
+const CheckIcon = () => (
+  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="3,8 7,12 13,4"/>
+  </svg>
+);
 
 // ── Small export actions bar inside the preview panel header ─────────────
 
@@ -158,14 +170,17 @@ function triggerDownload(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-function ExportBar({ svgRef, code }) {
-  const [toast, setToast] = useState('');
-  const show = msg => { setToast(msg); setTimeout(() => setToast(''), 1600); };
+function ExportBar({ svgRef, code, hasSvg }) {
+  const [confirmed, setConfirmed] = useState(null);
 
-  const svg = () => svgRef.current;
+  const flash = (key, action) => {
+    action();
+    setConfirmed(key);
+    setTimeout(() => setConfirmed(null), 1400);
+  };
 
   const dlSVG = () => {
-    const el = svg(); if (!el) return;
+    const el = svgRef.current; if (!el) return;
     let str = new XMLSerializer().serializeToString(el);
     if (!str.includes('xmlns=')) str = str.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
     triggerDownload(
@@ -175,7 +190,7 @@ function ExportBar({ svgRef, code }) {
   };
 
   const dlPNG = (scale = 2) => {
-    const el = svg(); if (!el) return;
+    const el = svgRef.current; if (!el) return;
     const w  = Number(el.getAttribute('width'))  || 640;
     const h  = Number(el.getAttribute('height')) || 420;
     let str  = new XMLSerializer().serializeToString(el);
@@ -193,27 +208,36 @@ function ExportBar({ svgRef, code }) {
     img.src = url;
   };
 
-  const copyBlock = () => {
-    navigator.clipboard.writeText(code ?? '').then(() => show('Copied!'));
-  };
-
-  const hasSvg = !!svgRef.current;
+  const copyBlock = () => navigator.clipboard.writeText(code ?? '');
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', position: 'relative' }}>
-      {toast && (
-        <span style={{
-          position: 'absolute', right: '100%', whiteSpace: 'nowrap',
-          marginRight: '0.5rem', fontSize: '0.72rem', color: 'var(--accent)',
-          fontWeight: 600,
-        }}>{toast}</span>
-      )}
-      <button className="btn btn-ghost" style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
-        onClick={copyBlock} title="Copy golem block">📋 Copy</button>
-      <button className="btn btn-ghost" style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
-        onClick={dlSVG} disabled={!hasSvg} title="Download SVG">⬡ SVG</button>
-      <button className="btn btn-primary" style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
-        onClick={() => dlPNG(2)} disabled={!hasSvg} title="Download PNG at 2× resolution">🖼 PNG</button>
+    <div className="export-bar">
+      <button
+        className={`export-btn${confirmed === 'copy' ? ' confirmed' : ''}`}
+        onClick={() => flash('copy', copyBlock)}
+        title="Copy golem block to clipboard"
+      >
+        {confirmed === 'copy' ? <CheckIcon /> : <CopyIcon />}
+        {confirmed === 'copy' ? 'Copied!' : 'Copy'}
+      </button>
+      <button
+        className={`export-btn${confirmed === 'svg' ? ' confirmed' : ''}`}
+        onClick={() => flash('svg', dlSVG)}
+        disabled={!hasSvg}
+        title="Download as SVG"
+      >
+        {confirmed === 'svg' ? <CheckIcon /> : <DlIcon />}
+        SVG
+      </button>
+      <button
+        className={`export-btn export-btn-accent${confirmed === 'png' ? ' confirmed' : ''}`}
+        onClick={() => flash('png', () => dlPNG(2))}
+        disabled={!hasSvg}
+        title="Download as PNG at 2x resolution"
+      >
+        {confirmed === 'png' ? <CheckIcon /> : <DlIcon />}
+        PNG 2x
+      </button>
     </div>
   );
 }

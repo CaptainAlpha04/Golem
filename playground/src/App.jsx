@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { Playground } from './pages/Playground.jsx';
 import { Docs }       from './pages/Docs.jsx';
@@ -9,6 +9,11 @@ import { THEMES, DEFAULT_THEME } from './themes.js';
 
 export const ThemeCtx = createContext(null);
 export const useTheme = () => useContext(ThemeCtx);
+
+// ── Export context (bridges Playground state → Toolbar) ───────────────────
+
+export const ExportCtx = createContext({ svgRef: { current: null }, code: '' });
+export const useExport = () => useContext(ExportCtx);
 
 // ── Shared layout (toolbar + page outlet) ────────────────────────────────
 

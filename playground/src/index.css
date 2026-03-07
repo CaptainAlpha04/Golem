@@ -34,6 +34,18 @@ body {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   z-index: 10;
+  position: relative;
+}
+.toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent) 70%, transparent 100%);
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .toolbar-brand {
@@ -44,7 +56,12 @@ body {
   color: var(--text);
   flex-shrink: 0;
 }
-.brand-icon { font-size: 1.35rem; color: var(--accent); }
+.brand-icon {
+  font-size: 1.4rem;
+  color: var(--accent);
+
+}
+
 .brand-name {
   font-size: 1.05rem;
   font-weight: 700;
@@ -67,7 +84,11 @@ body {
   transition: background 0.15s, color 0.15s;
 }
 .nav-link:hover { background: rgba(128,128,180,0.1); color: var(--text); }
-.nav-link.active { background: rgba(128,128,180,0.15); color: var(--accent); }
+.nav-link.active {
+  background: rgba(128,128,180,0.15);
+  color: var(--accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
 
 .toolbar-actions {
   margin-left: auto;
@@ -267,23 +288,72 @@ body {
   opacity: 0.45;
 }
 
-.editor-textarea {
+/* Content area wraps the highlight pre + textarea */
+.editor-content {
   flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Syntax-highlight layer — sits behind the transparent textarea */
+.editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   padding: 0.85rem 1rem;
-  background: var(--editor-bg);
+  margin: 0;
+  border: 0;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 2;
+  pointer-events: none;
+  user-select: none;
   color: var(--editor-text);
+  background: transparent;
+  will-change: transform;
+  overflow: hidden;
+}
+
+.editor-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
   border: none;
   outline: none;
   resize: none;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
   font-size: 0.85rem;
   line-height: 1.65;
   tab-size: 2;
-  caret-color: var(--accent);
+  white-space: pre-wrap;
+  z-index: 1;
 }
 .editor-textarea::selection { background: rgba(162, 155, 254, 0.25); }
+
+/* ── Syntax highlight tokens ─────────────────────────────────────────────── */
+.hl-key        { color: var(--hl-key); }
+.hl-prop       { color: var(--hl-prop); }
+.hl-func       { color: var(--hl-func); }
+.hl-var        { color: var(--hl-var, var(--hl-key)); }
+.hl-num        { color: var(--hl-num); }
+.hl-color-val  { color: var(--hl-color-val); }
+.hl-keyword    { color: var(--hl-prop); }
+.hl-op         { color: var(--hl-op, var(--text-muted)); }
+.hl-bracket    { color: var(--hl-op, var(--text-muted)); }
+.hl-punct      { color: var(--text-muted); }
 
 /* ── Preview Pane ────────────────────────────────────────────────────────── */
 .preview-pane {
@@ -312,9 +382,25 @@ body {
 }
 
 .preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
   color: var(--text-muted);
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.preview-loading-icon {
+  font-size: 2.2rem;
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
+  animation: loading-breathe 1.6s ease-in-out infinite;
+  display: block;
+}
+@keyframes loading-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(0.88); filter: drop-shadow(0 0 4px var(--accent)); }
+  50%       { opacity: 1;    transform: scale(1.08); filter: drop-shadow(0 0 12px var(--accent)) drop-shadow(0 0 24px var(--accent)); }
 }
 
 .preview-error {
@@ -570,6 +656,52 @@ body {
   font-family: inherit;
 }
 
+/* ── Export actions bar (panel header) ──────────────────────────────────── */
+.export-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.71rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+  font-family: inherit;
+}
+.export-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.export-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+.export-btn.confirmed {
+  border-color: color-mix(in srgb, #4ade80 55%, transparent);
+  color: #4ade80;
+  background: color-mix(in srgb, #4ade80 8%, transparent);
+}
+.export-btn-accent {
+  background:   color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+}
+.export-btn-accent:hover:not(:disabled) {
+  background:   color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Example bar (playground gallery) ───────────────────────────────────── */
 .example-bar {
   display: flex;
@@ -611,4 +743,11 @@ body {
   background: rgba(128,128,180,0.2);
   color: var(--text);
   border-color: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.example-chip.active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent);
 }
