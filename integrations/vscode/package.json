@@ -1,0 +1,32 @@
+{
+  "name": "vscode-golem",
+  "displayName": "Golem Graph",
+  "description": "Renders ```golem math blocks as SVG graphs in the VS Code Markdown preview.",
+  "version": "0.1.0",
+  "publisher": "golem",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/golem-graph/golem"
+  },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "keywords": ["markdown", "math", "graph", "svg", "golem", "equation", "visualization"],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "markdown.previewScripts": [
+      "./media/math.min.js",
+      "./media/golem.min.js",
+      "./media/golem-init.js"
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "node scripts/bundle-media.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}

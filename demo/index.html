@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Golem — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      padding: 3rem 1rem;
+    }
+
+    header {
+      text-align: center;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      letter-spacing: 0.1em;
+      color: #e2d9f3;
+    }
+    header p {
+      margin-top: 0.5rem;
+      color: #9e9eb8;
+      font-size: 0.95rem;
+    }
+
+    .demo-card {
+      background: #16213e;
+      border: 1px solid #2a2a5a;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 720px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .demo-card header {
+      text-align: left;
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid #2a2a5a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .demo-card header h2 {
+      font-size: 1rem;
+      font-family: monospace;
+      color: #a29bfe;
+    }
+    .demo-card header span {
+      font-size: 0.8rem;
+      color: #636380;
+    }
+
+    .graph-container {
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    .graph-container svg {
+      border-radius: 6px;
+      max-width: 100%;
+    }
+
+    .phase-badge {
+      display: inline-block;
+      background: #6c5ce7;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      padding: 0.25em 0.6em;
+      border-radius: 999px;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+    }
+
+    footer {
+      color: #555577;
+      font-size: 0.8rem;
+    }
+
+    /* ── Phase separator ── */
+    .phase-section {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .phase-section::before,
+    .phase-section::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #2a2a5a;
+    }
+    .phase-section h2 {
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #636380;
+      white-space: nowrap;
+    }
+    .phase-section h2 em {
+      color: #a29bfe;
+      font-style: normal;
+    }
+
+    /* ── Wide card (Phase 2 split layout) ── */
+    .demo-card.wide {
+      max-width: 1100px;
+    }
+
+    .split-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 800px) {
+      .split-view { grid-template-columns: 1fr; }
+    }
+
+    .code-pane {
+      border-right: 1px solid #2a2a5a;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .code-pane label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #636380;
+    }
+
+    pre.golem-block,
+    textarea.golem-block {
+      flex: 1;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      background: #0d1117;
+      color: #cdd9e5;
+      border: 1px solid #2a2a5a;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      white-space: pre;
+      overflow: auto;
+      resize: none;
+      outline: none;
+      min-height: 200px;
+    }
+    textarea.golem-block:focus {
+      border-color: #6c5ce7;
+    }
+
+    .error-msg {
+      font-size: 0.78rem;
+      color: #ff6b6b;
+      min-height: 1.2em;
+      font-family: monospace;
+    }
+
+    /* ── Web component demo box ── */
+    golem-graph {
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* ── Markdown live editor ── */
+    .md-editor {
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .md-editor label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #636380;
+    }
+    textarea.md-input {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      background: #0d1117;
+      color: #cdd9e5;
+      border: 1px solid #2a2a5a;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      resize: vertical;
+      outline: none;
+      min-height: 220px;
+    }
+    textarea.md-input:focus { border-color: #6c5ce7; }
+    .md-output {
+      padding: 1.2rem;
+      border-left: 1px solid #2a2a5a;
+      overflow: auto;
+    }
+    .md-output h1, .md-output h2, .md-output h3 {
+      color: #e2d9f3;
+      margin: 0.8rem 0 0.4rem;
+    }
+    .md-output p { color: #9e9eb8; margin: 0.4rem 0; font-size: 0.9rem; }
+    .md-output code {
+      background: #0d1117;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.85em;
+      color: #a29bfe;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Golem</h1>
+    <p>Declarative SVG graphing engine</p>
+  </header>
+
+  <div class="phase-section">
+    <h2><span class="phase-badge">Phase 1</span> &nbsp;<em>The Clay</em> — Foundational Rendering</h2>
+  </div>
+
+  <!-- Demo 1: Parabola -->
+  <div class="demo-card">
+    <header>
+      <h2>y = x²</h2>
+      <span>hard-coded parabola · domain [−5, 5]</span>
+    </header>
+    <div class="graph-container" id="graph-parabola"></div>
+  </div>
+
+  <!-- Demo 2: Cubic -->
+  <div class="demo-card">
+    <header>
+      <h2>y = x³ − 4x</h2>
+      <span>custom fn · domain [−3, 3]</span>
+    </header>
+    <div class="graph-container" id="graph-cubic"></div>
+  </div>
+
+  <!-- Demo 3: Sine wave -->
+  <div class="demo-card">
+    <header>
+      <h2>y = sin(x) × 2</h2>
+      <span>custom fn · domain [−2π, 2π]</span>
+    </header>
+    <div class="graph-container" id="graph-sine"></div>
+  </div>
+
+  <!-- ── Phase 2 ───────────────────────────────────────────────────────── -->
+  <div class="phase-section">
+    <h2><span class="phase-badge">Phase 2</span> &nbsp;<em>The Word</em> — String Parsing &amp; Math.js</h2>
+  </div>
+
+  <!-- Demo 2.5: Implicit curves -->
+  <div class="demo-card wide">
+    <header>
+      <h2>Implicit equations</h2>
+      <span>marching squares · y appears on both sides or in a non-trivial LHS</span>
+    </header>
+    <div class="split-view">
+      <div class="code-pane">
+        <label>golem block</label>
+<pre class="golem-block">formula: y^2 = x^3 - x
+domain: [-2, 2.5]
+range: [-2, 2]
+style:
+  stroke: #fdcb6e
+  width: 2.5
+  gridColor: subtle</pre>
+        <div style="margin-top:1rem">
+          <label>another example</label>
+<pre class="golem-block" style="margin-top:0.4rem">formula: x^2 + y^2 = 16
+domain: [-5, 5]
+range: [-5, 5]
+style:
+  stroke: #74b9ff
+  width: 2.5
+  gridColor: subtle</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div class="graph-container" id="graph-implicit-1" style="flex:1"></div>
+        <div class="graph-container" id="graph-implicit-2" style="flex:1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo 4: Declarative text block → rendered graph -->
+  <div class="demo-card wide">
+    <header>
+      <h2>Declarative syntax</h2>
+      <span>GolemParser + GolemCompiler · formula string compiled via Math.js</span>
+    </header>
+    <div class="split-view">
+      <div class="code-pane">
+        <label>golem block</label>
+<pre class="golem-block">formula: y = x^3 - 4x
+domain: [-3, 3]
+range: [-6, 6]
+style:
+  stroke: #6c5ce7
+  width: 2.5
+  gridColor: subtle</pre>
+      </div>
+      <div class="graph-container" id="graph-parsed"></div>
+    </div>
+  </div>
+
+  <!-- Demo 5: From the implementation plan's example schema -->
+  <div class="demo-card wide">
+    <header>
+      <h2>y = sin(x) × 2</h2>
+      <span>exact schema from the implementation plan</span>
+    </header>
+    <div class="split-view">
+      <div class="code-pane">
+        <label>golem block</label>
+<pre class="golem-block">formula: y = sin(x) * 2
+domain: [-6.28, 6.28]
+range: [-3, 3]
+style:
+  stroke: #2ecc71
+  width: 2</pre>
+      </div>
+      <div class="graph-container" id="graph-plan"></div>
+    </div>
+  </div>
+
+  <!-- Demo 6: Live interactive editor -->
+  <div class="demo-card wide">
+    <header>
+      <h2>Live editor</h2>
+      <span>edit the block and watch it render</span>
+    </header>
+    <div class="split-view">
+      <div class="code-pane">
+        <label>golem block — editable</label>
+        <textarea class="golem-block" id="live-input" spellcheck="false" autocomplete="off">formula: y = cos(x) * x
+domain: [-10, 10]
+range: [-12, 12]
+style:
+  stroke: #fd79a8
+  width: 2.5
+  gridColor: subtle</textarea>
+        <div class="error-msg" id="live-error"></div>
+      </div>
+      <div class="graph-container" id="graph-live"></div>
+    </div>
+  </div>
+
+  <!-- ── Phase 3 ──────────────────────────────────────────────────────────── -->
+  <div class="phase-section">
+    <h2><span class="phase-badge">Phase 3</span> &nbsp;<em>The Life</em> — Integration</h2>
+  </div>
+
+  <!-- Demo 7: <golem-graph> web component, attribute style -->
+  <div class="demo-card">
+    <header>
+      <h2>&lt;golem-graph&gt; — attribute style</h2>
+      <span>Custom Element · single tag, no JS needed</span>
+    </header>
+    <golem-graph
+      formula="y = sin(x) * 2"
+      domain="[-6.28, 6.28]"
+      range="[-3, 3]"
+      stroke="#00b894"
+      stroke-width="2.5"
+      width="640"
+      height="380">
+    </golem-graph>
+  </div>
+
+  <!-- Demo 8: <golem-graph> web component, block style -->
+  <div class="demo-card">
+    <header>
+      <h2>&lt;golem-graph&gt; — block style</h2>
+      <span>Custom Element · full golem syntax via &lt;script type="text/golem"&gt;</span>
+    </header>
+    <golem-graph width="640" height="380">
+      <script type="text/golem">
+formula: y = cos(x / 2) * x
+domain: [-10, 10]
+range: [-12, 12]
+style:
+  stroke: #e17055
+  width: 2.5
+  gridColor: subtle
+      </script>
+    </golem-graph>
+  </div>
+
+  <!-- Demo 9: markdown-it live editor -->
+  <div class="demo-card wide">
+    <header>
+      <h2>markdown-it integration — live editor</h2>
+      <span>GolemMdPlugin · type markdown with ```golem blocks</span>
+    </header>
+    <div class="split-view">
+      <div class="md-editor">
+        <label>markdown source — editable</label>
+        <textarea class="md-input" id="md-input" spellcheck="false" autocomplete="off"># My Analysis
+
+Here is a plot of the **cubic** function:
+
+```golem
+formula: y = x^3 - 4x
+domain: [-3, 3]
+range: [-6, 6]
+style:
+  stroke: #a29bfe
+  width: 2.5
+  gridColor: subtle
+```
+
+And a damped oscillation:
+
+```golem
+formula: y = sin(x) * e^(-0.3 * abs(x))
+domain: [-10, 10]
+range: [-1.2, 1.2]
+style:
+  stroke: #fd79a8
+  width: 2
+```</textarea>
+        <div class="error-msg" id="md-error"></div>
+      </div>
+      <div class="md-output" id="md-output"></div>
+    </div>
+  </div>
+
+  <footer>Golem v0.3 · Phase 1, 2 &amp; 3</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
+  <script src="../src/golem.js"></script>
+  <script>
+    // ── Demo 1: built-in parabola helper ──────────────────────────────────
+    Golem.renderParabola('#graph-parabola');
+
+    // ── Demo 2: cubic y = x³ − 4x ────────────────────────────────────────
+    Golem.render('#graph-cubic', {
+      fn:     (x) => x ** 3 - 4 * x,
+      domain: [-3, 3],
+      range:  [-6, 6],
+      width:  640,
+      height: 420,
+      label:  'Cubic: y = x³ − 4x',
+      style: {
+        stroke:      '#00cec9',
+        strokeWidth: 2.5,
+        gridColor:   '#ececec',
+        axisColor:   '#444444',
+        labelColor:  '#444444',
+        background:  '#fafafa',
+      },
+    });
+
+    // ── Demo 3: sine wave ─────────────────────────────────────────────────
+    Golem.render('#graph-sine', {
+      fn:     (x) => Math.sin(x) * 2,
+      domain: [-2 * Math.PI, 2 * Math.PI],
+      range:  [-3, 3],
+      width:  640,
+      height: 420,
+      label:  'Sine: y = sin(x) × 2',
+      style: {
+        stroke:      '#fd79a8',
+        strokeWidth: 2.5,
+        gridColor:   '#ececec',
+        axisColor:   '#444444',
+        labelColor:  '#444444',
+        background:  '#fafafa',
+      },
+    });
+  </script>
+  <script src="../src/parser.js"></script>
+  <script src="../src/compiler.js"></script>
+  <script src="../src/golem-element.js"></script>
+  <script src="../src/plugins/markdown-it-golem.js"></script>
+  <script>
+    // ── Demo 2.5: implicit curves ─────────────────────────────────────────
+    GolemCompiler.fromText(
+      `formula: y^2 = x^3 - x\ndomain: [-2, 2.5]\nrange: [-2, 2]\nstyle:\n  stroke: #fdcb6e\n  width: 2.5\n  gridColor: subtle`,
+      '#graph-implicit-1',
+      { width: 520, height: 260 }
+    );
+    GolemCompiler.fromText(
+      `formula: x^2 + y^2 = 16\ndomain: [-5, 5]\nrange: [-5, 5]\nstyle:\n  stroke: #74b9ff\n  width: 2.5\n  gridColor: subtle`,
+      '#graph-implicit-2',
+      { width: 520, height: 260 }
+    );
+
+    // ── Demo 4: declarative block from plan ───────────────────────────────
+    GolemCompiler.fromText(
+      document.querySelector('#graph-parsed').previousElementSibling.querySelector('pre').textContent,
+      '#graph-parsed',
+      { width: 520, height: 380 }
+    );
+
+    // ── Demo 5: exact plan schema ─────────────────────────────────────────
+    GolemCompiler.fromText(
+      document.querySelector('#graph-plan').previousElementSibling.querySelector('pre').textContent,
+      '#graph-plan',
+      { width: 520, height: 380 }
+    );
+
+    // ── Demo 6: live editor ───────────────────────────────────────────────
+    const liveInput = document.getElementById('live-input');
+    const liveError = document.getElementById('live-error');
+
+    function renderLive() {
+      liveError.textContent = '';
+      try {
+        GolemCompiler.fromText(liveInput.value, '#graph-live', { width: 520, height: 380 });
+      } catch (e) {
+        liveError.textContent = e.message;
+      }
+    }
+
+    // Debounce so we don't re-render on every keystroke
+    let debounceTimer;
+    liveInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderLive, 350);
+    });
+
+    renderLive(); // initial render
+
+    // ── Demo 9: markdown-it live editor ──────────────────────────────────
+    const md       = markdownit();
+    const mdInput  = document.getElementById('md-input');
+    const mdOutput = document.getElementById('md-output');
+    const mdError  = document.getElementById('md-error');
+
+    // Register the golem fence plugin once
+    md.use(GolemMdPlugin.plugin);
+
+    function renderMarkdown() {
+      mdError.textContent  = '';
+      mdOutput.innerHTML   = '';
+      try {
+        mdOutput.innerHTML = md.render(mdInput.value);
+        GolemMdPlugin.hydrate(mdOutput, { width: 460, height: 320 });
+      } catch (e) {
+        mdError.textContent = e.message;
+      }
+    }
+
+    let mdDebounce;
+    mdInput.addEventListener('input', () => {
+      clearTimeout(mdDebounce);
+      mdDebounce = setTimeout(renderMarkdown, 350);
+    });
+
+    renderMarkdown(); // initial render
+  </script>
+</body>
+</html>

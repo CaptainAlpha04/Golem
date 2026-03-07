@@ -1,0 +1,14 @@
+{
+  "name": "obsidian-golem-graph",
+  "version": "0.1.0",
+  "description": "Build script for the Golem Graph Obsidian plugin",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --external:obsidian --format=cjs --outfile=main.js",
+    "dev":   "esbuild src/main.js --bundle --external:obsidian --format=cjs --outfile=main.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "@types/node": "^20.0.0"
+  }
+}

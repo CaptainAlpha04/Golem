@@ -1,0 +1,9 @@
+playground/
+integrations/vscode/
+integrations/obsidian/
+integrations/xhtml/
+demo/
+docs/
+.vscode/
+*.test.js
+*.spec.js

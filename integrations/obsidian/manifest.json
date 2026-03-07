@@ -1,0 +1,10 @@
+{
+  "id": "golem-graph",
+  "name": "Golem Graph",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Renders ```golem math equation blocks as inline SVG graphs inside Obsidian notes.",
+  "author": "Golem",
+  "authorUrl": "https://github.com/golem-graph/golem",
+  "isDesktopOnly": false
+}
