@@ -1,6 +1,6 @@
 {
   "name": "golem-graph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Declarative SVG graphing engine for mathematical equations. Supports explicit and implicit curves, adaptive sampling, and marching squares.",
   "main": "dist/golem.js",
   "module": "src/bundle-entry.js",
@@ -8,7 +8,7 @@
   "exports": {
     ".": {
       "browser": "./dist/golem.min.js",
-      "import":  "./src/bundle-entry.js",
+      "import": "./src/bundle-entry.js",
       "require": "./dist/golem.js"
     }
   },
@@ -23,12 +23,22 @@
     "build": "npx esbuild src/bundle-entry.js --bundle --format=iife --global-name=GolemBundle --outfile=dist/golem.js",
     "build:min": "npx esbuild src/bundle-entry.js --bundle --format=iife --global-name=GolemBundle --outfile=dist/golem.min.js --minify"
   },
-  "keywords": ["math", "svg", "graphing", "visualization", "equation", "chart", "plot"],
+  "keywords": [
+    "math",
+    "svg",
+    "graphing",
+    "visualization",
+    "equation",
+    "chart",
+    "plot"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "mathjs": ">=11.0.0"
   },
   "peerDependenciesMeta": {
-    "mathjs": { "optional": true }
+    "mathjs": {
+      "optional": true
+    }
   }
 }
