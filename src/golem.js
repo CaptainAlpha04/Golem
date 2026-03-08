@@ -260,13 +260,148 @@ const Golem = (() => {
     }
 
     if (pathParts.length === 0) return;
-    svg.appendChild(svgEl('path', {
+    const implicitAttrs = {
       d: pathParts.join(' '),
       fill: 'none',
       stroke,
       'stroke-width': strokeWidth,
       'stroke-linecap': 'round',
       'stroke-linejoin': 'round',
+    };
+    const impDash = resolveDashArray(style.dash, strokeWidth);
+    if (impDash) implicitAttrs['stroke-dasharray'] = impDash;
+    svg.appendChild(svgEl('path', implicitAttrs));
+  }
+
+  // ─── Stroke Dash Array ────────────────────────────────────────────────────
+  // Maps the 'dash' style value to an SVG stroke-dasharray string.
+
+  function resolveDashArray(dash, strokeWidth) {
+    const sw = strokeWidth ?? 2;
+    switch ((dash ?? 'solid').toLowerCase()) {
+      case 'dashed':  return `${sw * 4},${sw * 3}`;
+      case 'dotted':  return `${sw},${sw * 2}`;
+      case 'dash-dot':return `${sw * 5},${sw * 2},${sw},${sw * 2}`;
+      default:        return null;   // solid — no attribute needed
+    }
+  }
+
+  // ─── Explicit Region Fill ──────────────────────────────────────────────────
+  // Shades the region above or below an explicit curve y = f(x).
+  // inequality: '<=' | '<'  → shade below (between curve and yMin)
+  //             '>=' | '>'  → shade above (between curve and yMax)
+
+  function buildExplicitFill(svg, map, fn, inequality, domain, range, style) {
+    const { fx, fy }   = map;
+    const [xMin, xMax] = domain;
+    const [yMin, yMax] = range;
+    const fillColor    = style.fill        ?? style.stroke ?? '#a29bfe';
+    const fillOpacity  = style.fillOpacity ?? 0.15;
+    const shadeBelow   = inequality === '<=' || inequality === '<';
+    const baselineY    = shadeBelow ? yMin : yMax;
+
+    const points = adaptiveSample(fn, domain);
+
+    // Split into continuous runs (gaps at NaN), close each run into a polygon.
+    const pathParts = [];
+
+    function closeRun(run) {
+      if (run.length < 2) return;
+      const [startX] = run[0];
+      const [endX]   = run[run.length - 1];
+      const d = run.map(([x, y], i) => {
+        // Clamp y to viewport so that asymptotes don't blow up the polygon.
+        const cy  = Math.max(yMin, Math.min(yMax, y));
+        const px  = fx(x).toFixed(3);
+        const py  = fy(cy).toFixed(3);
+        return i === 0 ? `M${px},${py}` : `L${px},${py}`;
+      }).join(' ');
+      pathParts.push(
+        d +
+        ` L${fx(endX).toFixed(3)},${fy(baselineY).toFixed(3)}` +
+        ` L${fx(startX).toFixed(3)},${fy(baselineY).toFixed(3)}` +
+        ' Z'
+      );
+    }
+
+    let run = [];
+    for (const [x, y] of points) {
+      if (!isFinite(y)) { closeRun(run); run = []; }
+      else              { run.push([x, y]); }
+    }
+    closeRun(run);
+
+    if (pathParts.length === 0) return;
+    svg.appendChild(svgEl('path', {
+      d: pathParts.join(' '),
+      fill: fillColor,
+      'fill-opacity': fillOpacity,
+      stroke: 'none',
+    }));
+  }
+
+  // ─── Implicit Region Fill ─────────────────────────────────────────────────
+  // Shades the region where F(x,y) satisfies the inequality against zero.
+  // Uses horizontal scan-lines so it works for any shape, convex or not.
+  // F = lhs − rhs, so "lhs <= rhs" ⟺ "F <= 0" etc.
+
+  function buildImplicitFill(svg, map, implicitFn, inequality, domain, range, style) {
+    const { fx, fy }   = map;
+    const [xMin, xMax] = domain;
+    const [yMin, yMax] = range;
+    const fillColor    = style.fill        ?? style.stroke ?? '#a29bfe';
+    const fillOpacity  = style.fillOpacity ?? 0.15;
+
+    function inside(v) {
+      switch (inequality) {
+        case '<=': return v <= 0;
+        case '>=': return v >= 0;
+        case '<':  return v <  0;
+        case '>':  return v >  0;
+        default:   return false;
+      }
+    }
+
+    const res = 140;   // scan-line count — more = smoother edges
+    const dx  = (xMax - xMin) / res;
+    const dy  = (yMax - yMin) / res;
+    // Pixel height of one scan-line row (+ 1 px overlap to prevent gaps)
+    const lineH = Math.abs(fy(yMin) - fy(yMin + dy)) + 1;
+
+    const pathParts = [];
+
+    for (let j = 0; j <= res; j++) {
+      const y  = yMin + j * dy;
+      const py = fy(y).toFixed(2);
+      let runStart = null;
+
+      for (let i = 0; i <= res; i++) {
+        const x = xMin + i * dx;
+        let v;
+        try { v = implicitFn(x, y); } catch { v = NaN; }
+        const isInside = isFinite(v) && inside(v);
+
+        if (isInside && runStart === null) {
+          runStart = x;
+        } else if (!isInside && runStart !== null) {
+          pathParts.push(`M${fx(runStart).toFixed(2)},${py}H${fx(x).toFixed(2)}`);
+          runStart = null;
+        }
+      }
+      if (runStart !== null) {
+        pathParts.push(`M${fx(runStart).toFixed(2)},${py}H${fx(xMax).toFixed(2)}`);
+      }
+    }
+
+    if (pathParts.length === 0) return;
+    // Render as thick horizontal strokes — one per scan-line row.
+    svg.appendChild(svgEl('path', {
+      d:                  pathParts.join(' '),
+      fill:               'none',
+      stroke:             fillColor,
+      'stroke-width':     lineH,
+      'stroke-opacity':   fillOpacity,
+      'stroke-linecap':   'butt',
     }));
   }
 
@@ -276,6 +411,7 @@ const Golem = (() => {
     const { fx, fy } = map;
     const stroke      = style.stroke      ?? '#e74c3c';
     const strokeWidth = style.strokeWidth ?? 2;
+    const dashArray   = resolveDashArray(style.dash, strokeWidth);
 
     const pathParts = [];
     let penDown = false;
@@ -290,14 +426,16 @@ const Golem = (() => {
 
     if (pathParts.length === 0) return;
 
-    svg.appendChild(svgEl('path', {
+    const attrs = {
       d: pathParts.join(' '),
       fill: 'none',
       stroke,
       'stroke-width': strokeWidth,
       'stroke-linecap': 'round',
       'stroke-linejoin': 'round',
-    }));
+    };
+    if (dashArray) attrs['stroke-dasharray'] = dashArray;
+    svg.appendChild(svgEl('path', attrs));
   }
 
   // ─── Border / Frame ──────────────────────────────────────────────────────
@@ -321,17 +459,17 @@ const Golem = (() => {
   /**
    * render(target, config)
    *
-   * target  — a CSS selector string or a DOM element
-   * config  — {
-   *   fn         : (x) => Number         — explicit function to plot
-   *   implicitFn : (x, y) => Number       — implicit F(x,y)=0 curve (alt. to fn)
-   *   domain   : [xMin, xMax]
-   *   range    : [yMin, yMax]
-   *   width    : Number (px, default 600)
-   *   height   : Number (px, default 400)
-   *   padding  : { top, right, bottom, left }
-   *   style    : { stroke, strokeWidth, gridColor, axisColor, labelColor, fontSize, frameColor }
-   * }
+   * config supports two forms:
+   *
+   * Single-function:
+   *   { fn | implicitFn, domain, range, width, height, padding, style }
+   *
+   * Multi-function:
+   *   { functions: [{ type, fn|implicitFn, label, style }],
+   *     domain, range, width, height, padding, style }
+   *
+   * Per-function style keys: stroke, strokeWidth, dash
+   * Global style keys: background, gridColor, axisColor, labelColor, frameColor, fontSize
    */
   function render(target, config) {
     const el = typeof target === 'string' ? document.querySelector(target) : target;
@@ -340,6 +478,8 @@ const Golem = (() => {
     const {
       fn,
       implicitFn,
+      functions,
+      inequality = null,
       domain  = [-5, 5],
       range   = [-10, 10],
       width   = 600,
@@ -348,8 +488,10 @@ const Golem = (() => {
       style   = {},
     } = config;
 
-    if (typeof fn !== 'function' && typeof implicitFn !== 'function') {
-      throw new Error('Golem: config must have either fn (explicit) or implicitFn (implicit)');
+    const hasMulti = Array.isArray(functions) && functions.length > 0;
+
+    if (!hasMulti && typeof fn !== 'function' && typeof implicitFn !== 'function') {
+      throw new Error('Golem: config must have fn, implicitFn, or a functions array');
     }
 
     // Clear any previous render
@@ -374,12 +516,40 @@ const Golem = (() => {
     // Grid + axes
     buildGrid(svg, map, domain, range, style);
 
-    // Curve — dispatch on explicit vs implicit
-    if (typeof implicitFn === 'function') {
+    // Fills (rendered before curves so the boundary line sits on top)
+    if (hasMulti) {
+      for (const fnDef of functions) {
+        const fnStyle = fnDef.style ?? {};
+        const fnIneq  = fnDef.inequality ?? null;
+        if (!fnIneq) continue;
+        if (fnDef.type === 'implicit' && typeof fnDef.implicitFn === 'function') {
+          buildImplicitFill(svg, map, fnDef.implicitFn, fnIneq, domain, range, fnStyle);
+        } else if (typeof fnDef.fn === 'function') {
+          buildExplicitFill(svg, map, fnDef.fn, fnIneq, domain, range, fnStyle);
+        }
+      }
+    } else if (inequality) {
+      if (typeof implicitFn === 'function') {
+        buildImplicitFill(svg, map, implicitFn, inequality, domain, range, style);
+      } else if (typeof fn === 'function') {
+        buildExplicitFill(svg, map, fn, inequality, domain, range, style);
+      }
+    }
+
+    // Curves
+    if (hasMulti) {
+      for (const fnDef of functions) {
+        const fnStyle = fnDef.style ?? {};
+        if (fnDef.type === 'implicit' && typeof fnDef.implicitFn === 'function') {
+          buildImplicitCurve(svg, map, fnDef.implicitFn, domain, range, fnStyle);
+        } else if (typeof fnDef.fn === 'function') {
+          buildCurve(svg, map, adaptiveSample(fnDef.fn, domain), fnStyle);
+        }
+      }
+    } else if (typeof implicitFn === 'function') {
       buildImplicitCurve(svg, map, implicitFn, domain, range, style);
     } else {
-      const points = adaptiveSample(fn, domain);
-      buildCurve(svg, map, points, style);
+      buildCurve(svg, map, adaptiveSample(fn, domain), style);
     }
 
     // Frame border

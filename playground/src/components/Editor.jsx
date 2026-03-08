@@ -103,16 +103,29 @@ function highlightValue(str, context) {
   return esc(leadWS) + inner + esc(tailWS);
 }
 
-const STYLE_SUBKEYS = /^(stroke|strokeWidth|width|gridColor|axisColor|labelColor|background|frameColor|strokeDash|labelSize|labelFont|padding|grid|aspect)$/;
+const STYLE_SUBKEYS = /^(stroke|strokeWidth|width|gridColor|axisColor|labelColor|background|frameColor|strokeDash|labelSize|labelFont|padding|grid|aspect|dash|fill|fillOpacity)$/;
 
 function highlightLine(line) {
   if (!line.trim()) return esc(line);
 
-  // Top-level key: formula, domain, range, style
-  const topM = line.match(/^(formula|domain|range|style)(\s*:)(.*)/s);
+  // Top-level key: formula, domain, range, style, functions, condition, label
+  const topM = line.match(/^(formula|domain|range|style|functions|condition|label)(\s*:)(.*)/s);
   if (topM) {
     const [, key, colon, rest] = topM;
     return `<span class="hl-key">${esc(key)}</span><span class="hl-punct">${esc(colon)}</span>${highlightValue(rest, key)}`;
+  }
+
+  // List item line: "  - ..." (function list entries)
+  const listM = line.match(/^(\s+)(-)( +)(.*)/s);
+  if (listM) {
+    const [, indent, dash, sp, rest] = listM;
+    // rest may start with an inline key like "formula: y = sin(x)"
+    const inlineKeyM = rest.match(/^(formula|condition|label|style)(\s*:)(.*)/s);
+    if (inlineKeyM) {
+      const [, key, colon, val] = inlineKeyM;
+      return `${esc(indent)}<span class="hl-op">${esc(dash)}</span>${esc(sp)}<span class="hl-key">${esc(key)}</span><span class="hl-punct">${esc(colon)}</span>${highlightValue(val, key)}`;
+    }
+    return `${esc(indent)}<span class="hl-op">${esc(dash)}</span>${esc(sp)}${esc(rest)}`;
   }
 
   // Style sub-key (indented line with a colon)

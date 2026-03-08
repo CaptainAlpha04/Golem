@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
 
 const SECTIONS = [
-  { id: 'intro',        label: 'Introduction',       group: 'Getting Started' },
-  { id: 'quickstart',   label: 'Quick Start',         group: 'Getting Started' },
-  { id: 'syntax',       label: 'Formula Syntax',      group: 'Reference' },
-  { id: 'explicit',     label: 'Explicit Equations',  group: 'Reference' },
-  { id: 'implicit',     label: 'Implicit Equations',  group: 'Reference' },
-  { id: 'style',        label: 'Style Options',       group: 'Reference' },
-  { id: 'themes',       label: 'Themes',              group: 'Reference' },
-  { id: 'vanilla',      label: 'Vanilla HTML',        group: 'Integrations' },
-  { id: 'webcomponent', label: 'Web Component',       group: 'Integrations' },
-  { id: 'markdownit',   label: 'markdown-it',         group: 'Integrations' },
-  { id: 'remark',       label: 'remark',              group: 'Integrations' },
-  { id: 'vscode',       label: 'VS Code',             group: 'Integrations' },
-  { id: 'obsidian',     label: 'Obsidian',            group: 'Integrations' },
-  { id: 'api',          label: 'API Reference',       group: 'Advanced' },
-  { id: 'bundling',     label: 'Bundling / CDN',      group: 'Advanced' },
-  { id: 'publishing',   label: 'Publishing to npm',   group: 'Advanced' },
+  { id: 'intro',        label: 'Introduction',          group: 'For Users' },
+  { id: 'quickstart',   label: 'Quick Start',            group: 'For Users' },
+  { id: 'syntax',       label: 'Formula Syntax',         group: 'For Users' },
+  { id: 'explicit',     label: 'Explicit Equations',     group: 'For Users' },
+  { id: 'implicit',     label: 'Implicit Equations',     group: 'For Users' },
+  { id: 'multi',        label: 'Multiple Functions',     group: 'For Users' },
+  { id: 'inequality',   label: 'Shaded Regions',         group: 'For Users' },
+  { id: 'style',        label: 'Style Options',          group: 'For Users' },
+  { id: 'themes',       label: 'Themes',                 group: 'For Users' },
+  { id: 'vanilla',      label: 'Vanilla HTML',           group: 'Integrations' },
+  { id: 'webcomponent', label: 'Web Component',          group: 'Integrations' },
+  { id: 'markdownit',   label: 'markdown-it',            group: 'Integrations' },
+  { id: 'remark',       label: 'remark',                 group: 'Integrations' },
+  { id: 'vscode',       label: 'VS Code',                group: 'Integrations' },
+  { id: 'obsidian',     label: 'Obsidian',               group: 'Integrations' },
+  { id: 'api',          label: 'JavaScript API',         group: 'For Developers' },
+  { id: 'bundling',     label: 'Bundling / CDN',         group: 'For Developers' },
+  { id: 'publishing',   label: 'Publishing to npm',      group: 'For Developers' },
 ];
 
 function groupBy(arr, key) {
@@ -91,19 +93,34 @@ export function Docs() {
 
         {/* ── Introduction ──────────────────────────────────────────────── */}
         <section id="intro">
-          <h1>Golem Documentation</h1>
-          <p className="docs-lead">
-            Golem is a declarative graphing engine that compiles mathematical equations
-            into scalable SVG graphics. Specify an equation in a clean, readable text
-            format — Golem handles coordinate mapping, adaptive sampling, grid
-            generation, axis labelling, and SVG output.
+          <h1>Golem</h1>
+          <p className="docs-lead">Write an equation. Get a graph. That&rsquo;s it.</p>
+          <p>
+            Golem is a declarative graphing engine that turns plain-text math into
+            scalable SVG graphics — no build step, no configuration, no JavaScript
+            required. Drop in a{' '}<Inline>{'<script>'}</Inline> tag,
+            write your formula, and Golem handles coordinate mapping, adaptive
+            sampling, grid lines, axis labels, and rendering automatically.
           </p>
           <p>
-            Golem works in any environment where JavaScript runs: raw HTML pages,
-            Markdown editors (Obsidian, VS Code), static site generators (remark,
-            markdown-it), and custom web applications. A single{' '}
-            <Inline>{'<script>'}</Inline> tag is all you need to get started.
+            It works everywhere JavaScript runs: raw HTML pages, Markdown editors
+            (Obsidian, VS Code), static-site generators (remark, markdown-it),
+            and custom web apps.
           </p>
+          <div className="docs-link-row">
+            <a className="docs-hero-link docs-hero-link--primary"
+               href="https://golem-beta.vercel.app" target="_blank" rel="noreferrer">
+              ▶&nbsp;Try the playground
+            </a>
+            <a className="docs-hero-link"
+               href="https://www.npmjs.com/package/golem-graph" target="_blank" rel="noreferrer">
+              npm install golem-graph
+            </a>
+            <a className="docs-hero-link"
+               href="https://github.com/captainalpha04/golem" target="_blank" rel="noreferrer">
+              GitHub &rarr;
+            </a>
+          </div>
         </section>
 
         {/* ── Quick Start ───────────────────────────────────────────────── */}
@@ -294,7 +311,7 @@ formula: x^2 + 1            ← bare expression (implicit y = ...)
 
         {/* ── Implicit ──────────────────────────────────────────────────── */}
         <section id="implicit">
-          <h2>Implicit Equations <span className="docs-badge docs-badge-new">New</span></h2>
+          <h2>Implicit Equations</h2>
           <p>
             When <Inline>y</Inline> appears on the left side non-trivially, or on
             both sides, Golem automatically treats the equation as implicit and uses
@@ -313,6 +330,136 @@ formula: (x^2 + y^2)^2 = 2*x^2 - 2*y^2  ← lemniscate`}</Code>
             a flag. It works by checking if <Inline>y</Inline> appears in the LHS
             (beyond a simple identifier) or in the RHS.
           </p>
+        </section>
+
+        {/* ── Multiple Functions ────────────────────────────────────────── */}
+        <section id="multi">
+          <h2>Multiple Functions <span className="docs-badge docs-badge-new">New</span></h2>
+          <p>
+            Use a <Inline>functions:</Inline> block to plot several curves on one
+            graph. Each entry is an indented formula line — everything else
+            (<Inline>domain</Inline>, <Inline>range</Inline>, <Inline>style</Inline>)
+            is shared across all of them.
+          </p>
+          <Code>{`functions:
+  y = sin(x)
+  y = cos(x)
+  y = sin(x) + cos(x)
+domain: [-6.28, 6.28]
+range:  [-2.5, 2.5]`}</Code>
+          <p>
+            Golem assigns colours from a built-in palette automatically when no
+            per-function stroke is set. To override the colour or line style for
+            a specific function, append style keys after the formula using a{' '}
+            <Inline>|</Inline> separator:
+          </p>
+          <Code>{`functions:
+  y = sin(x)          | stroke: #e74c3c, width: 2.5
+  y = sin(x) * 2      | stroke: #3498db, dash: 6 4
+  y = abs(sin(x))     | stroke: #2ecc71, width: 1.5
+domain: [-6.28, 6.28]
+range:  [-3, 3]`}</Code>
+          <h3>Per-function style keys</h3>
+          <table className="docs-table">
+            <thead>
+              <tr><th>Key</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              {[
+                ['stroke',       'Curve colour (hex, rgb, or named colour)'],
+                ['width',        'Stroke width in px'],
+                ['dash',         'SVG stroke-dasharray value, e.g. "6 3" for dashes'],
+                ['fill',         'Fill colour for inequality shading (see Shaded Regions)'],
+                ['fillOpacity',  'Opacity of the fill (0–1), default 0.25'],
+              ].map(([k, d]) => (
+                <tr key={k}><td><Inline>{k}</Inline></td><td>{d}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <h3>Piecewise functions</h3>
+          <p>
+            Any function in a <Inline>functions:</Inline> block (or a standalone{' '}
+            <Inline>formula:</Inline>) can include a <Inline>condition:</Inline> key
+            to restrict where it is drawn:
+          </p>
+          <Code>{`functions:
+  y = -x + 2  | condition: x < 0
+  y = x^2     | condition: x >= 0 and x <= 2
+  y = sqrt(x) | condition: x > 2
+domain: [-3, 5]
+range:  [-1, 6]`}</Code>
+          <Callout>
+            Conditions use standard Math.js boolean expressions.
+            Use <Inline>and</Inline> / <Inline>or</Inline>, comparison operators
+            (<Inline>{'<'}</Inline>, <Inline>{'<='}</Inline>,{' '}
+            <Inline>{'>'}</Inline>, <Inline>{'>='}</Inline>,{' '}
+            <Inline>==</Inline>), and any Math.js function.
+          </Callout>
+        </section>
+
+        {/* ── Shaded Regions ────────────────────────────────────────────── */}
+        <section id="inequality">
+          <h2>Shaded Regions <span className="docs-badge docs-badge-new">New</span></h2>
+          <p>
+            Replace the <Inline>=</Inline> in any formula with an inequality operator
+            to shade the region satisfying that inequality. Works for both explicit
+            and implicit equations.
+          </p>
+          <table className="docs-table">
+            <thead>
+              <tr><th>Operator</th><th>Shaded area</th></tr>
+            </thead>
+            <tbody>
+              {[
+                ['y <= f(x)', 'Below (or on) the curve'],
+                ['y >= f(x)', 'Above (or on) the curve'],
+                ['y < f(x)',  'Strictly below the curve (same appearance)'],
+                ['y > f(x)',  'Strictly above the curve (same appearance)'],
+              ].map(([op, desc]) => (
+                <tr key={op}><td><Inline>{op}</Inline></td><td>{desc}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <Code>{`formula: y <= sin(x)
+domain:  [-6.28, 6.28]
+range:   [-2, 2]
+style:
+  stroke:      #e74c3c
+  fill:        #e74c3c
+  fillOpacity: 0.2`}</Code>
+          <h3>Fill style keys</h3>
+          <table className="docs-table">
+            <thead>
+              <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              {[
+                ['fill',        'same as stroke', 'Fill colour for the shaded region'],
+                ['fillOpacity', '0.25',           'Opacity of the fill (0 = invisible, 1 = solid)'],
+              ].map(([k, d, desc]) => (
+                <tr key={k}>
+                  <td><Inline>{k}</Inline></td>
+                  <td style={{ opacity: 0.7 }}>{d}</td>
+                  <td>{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p>
+            Inequalities also work inside a <Inline>functions:</Inline> block —
+            each function can independently be an equation or an inequality:
+          </p>
+          <Code>{`functions:
+  y >= sin(x)   | fill: #3498db, fillOpacity: 0.15, stroke: #3498db
+  y <= cos(x)   | fill: #e74c3c, fillOpacity: 0.15, stroke: #e74c3c
+domain: [-6.28, 6.28]
+range:  [-2, 2]`}</Code>
+          <Callout>
+            <strong>How it works:</strong> for explicit inequalities the safe-region polygon
+            is built by tracing the curve, extending to the frame edge in the shaded
+            direction, and closing the path. For implicit inequalities the sign of
+            <code> f(x, y) </code> is used to fill grid cells directly.
+          </Callout>
         </section>
 
         {/* ── Style Options ─────────────────────────────────────────────── */}
@@ -547,7 +694,7 @@ curl -L https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.min.js \\
 
         {/* ── API Reference ─────────────────────────────────────────────── */}
         <section id="api">
-          <h2>API Reference</h2>
+          <h2>JavaScript API</h2>
 
           <h3>GolemParser.parse(text)</h3>
           <p>Parses a golem text block into a raw config object.</p>

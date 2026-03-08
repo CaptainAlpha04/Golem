@@ -2,7 +2,7 @@
   "name": "vscode-golem",
   "displayName": "Golem Graph",
   "description": "Renders ```golem math blocks as SVG graphs in the VS Code Markdown preview.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "golem",
   "license": "MIT",
   "repository": {

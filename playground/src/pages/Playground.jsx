@@ -17,14 +17,55 @@ style:
   gridColor: subtle`,
   },
   {
-    label: 'Cubic',
-    code: `formula: y = x^3 - 4x
-domain: [-3, 3]
-range: [-6, 6]
+    label: 'Multi-function',
+    code: `domain: [-6.28, 6.28]
+range: [-2.5, 2.5]
 style:
-  stroke: #00cec9
-  width: 2.5
-  gridColor: subtle`,
+  gridColor: subtle
+
+functions:
+  - formula: y = sin(x)
+    label: sin(x)
+    style:
+      stroke: #a29bfe
+      width: 2.5
+  - formula: y = cos(x)
+    label: cos(x)
+    style:
+      stroke: #74b9ff
+      width: 2.5
+      dash: dashed
+  - formula: y = sin(x) * cos(x)
+    label: sin·cos
+    style:
+      stroke: #55efc4
+      width: 2
+      dash: dotted`,
+  },
+  {
+    label: 'Piecewise',
+    code: `domain: [-4, 4]
+range: [-2, 6]
+style:
+  gridColor: subtle
+
+functions:
+  - formula: y = x^2
+    condition: x < 0
+    style:
+      stroke: #fd79a8
+      width: 2.5
+  - formula: y = 2
+    condition: x >= 0 and x < 2
+    style:
+      stroke: #fdcb6e
+      width: 2.5
+      dash: dashed
+  - formula: y = 6 - x
+    condition: x >= 2
+    style:
+      stroke: #74b9ff
+      width: 2.5`,
   },
   {
     label: 'Elliptic curve',
@@ -38,23 +79,32 @@ style:
   },
   {
     label: 'Circle',
-    code: `formula: x^2 + y^2 = 16
+    code: `formula: x^2 + y^2 <= 16
 domain: [-5, 5]
 range: [-5, 5]
 style:
   stroke: #74b9ff
-  width: 2.5
+  width: 2
   gridColor: subtle`,
   },
   {
-    label: 'Gaussian sine',
-    code: `formula: y = sin(x) * e^(-0.15 * x^2)
-domain: [-8, 8]
-range: [-1.2, 1.2]
+    label: 'Shaded regions',
+    code: `domain: [-4, 4]
+range: [-3, 5]
 style:
-  stroke: #fd79a8
-  width: 2.5
-  gridColor: subtle`,
+  gridColor: subtle
+
+functions:
+  - formula: y <= sin(x) + 1
+    label: below sin
+    style:
+      stroke: #a29bfe
+      width: 2
+  - formula: y >= x^2 - 3
+    label: above parabola
+    style:
+      stroke: #55efc4
+      width: 2`,
   },
   {
     label: 'Lemniscate',

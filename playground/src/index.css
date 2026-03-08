@@ -542,6 +542,43 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.docs-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.docs-hero-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--code-bg);
+  text-decoration: none !important;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.docs-hero-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.docs-hero-link--primary {
+  background: var(--accent);
+  color: var(--bg) !important;
+  border-color: var(--accent);
+}
+
+.docs-hero-link--primary:hover {
+  opacity: 0.88;
+  color: var(--bg) !important;
+}
+
 .docs-main ul, .docs-main ol {
   padding-left: 1.5rem;
   color: var(--text-muted);

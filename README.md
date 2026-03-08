@@ -1,34 +1,39 @@
-# Golem
+<div align="center">
+  <img src="./playground/public/favicon.svg" width="72" alt="Golem" />
 
-**A declarative graphing engine that compiles mathematical equations into scalable SVG graphics.**
+  # Golem
 
-Specify a mathematical equation in a clean, readable text format. Golem handles coordinate mapping, adaptive sampling, grid generation, and SVG output automatically.
+  **Write equations. Get beautiful graphs.**
 
----
+  [![npm](https://img.shields.io/npm/v/golem-graph?color=a29bfe&labelColor=1a1a2e&label=npm)](https://www.npmjs.com/package/golem-graph)
+  [![License: MIT](https://img.shields.io/badge/license-MIT-74b9ff?labelColor=1a1a2e)](LICENSE)
+  [![Playground](https://img.shields.io/badge/Try%20it%20live-golem--beta.vercel.app-55efc4?labelColor=1a1a2e)](https://golem-beta.vercel.app)
+  [![GitHub](https://img.shields.io/badge/source-GitHub-fd79a8?labelColor=1a1a2e)](https://github.com/YOUR_USERNAME/golem)
 
-## Features
-
-- **Human-natural syntax** — write `y = sin(x) * 2`, not `Math.sin(x) * 2`
-- **Explicit & implicit equations** — `y = f(x)` *and* `F(x, y) = 0` (circles, elliptic curves, lemniscates…)
-- **Adaptive sampling** — extra points are added automatically where the curve is steep
-- **Marching squares** — implicit curves rendered on a high-resolution grid with saddle-point disambiguation
-- **Theme-aware** — Obsidian, Glacier, Magma, Moonlight presets; fully customisable styles
-- **Universal** — Vanilla HTML · Web Component · markdown-it · remark · VS Code · Obsidian · CDN
+</div>
 
 ---
 
-## 30-second Quick Start
+Golem is a declarative graphing engine. Describe a mathematical equation in a clean, human-readable format and Golem renders a precise, scalable SVG — with grid lines, axis labels, and adaptive sampling handled automatically.
+
+No Canvas. No D3. No data arrays. Write the equation; Golem does the rest.
+
+---
+
+## For Users
+
+> **[Open the live playground →](https://golem-beta.vercel.app)** — try any equation instantly, no install needed.
+
+### Quick Start
+
+Two scripts. One `<div>`. Done.
 
 ```html
-<!-- 1. Math.js (expression evaluator) -->
+<!-- Math.js (expression evaluator) -->
 <script src="https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.min.js"></script>
+<!-- Golem -->
+<script src="https://cdn.jsdelivr.net/npm/golem-graph/dist/golem.min.js"></script>
 
-<!-- 2. Golem -->
-<script src="golem.js"></script>
-<script src="parser.js"></script>
-<script src="compiler.js"></script>
-
-<!-- 3. A target -->
 <div id="graph"></div>
 
 <script>
@@ -44,199 +49,197 @@ Specify a mathematical equation in a clean, readable text format. Golem handles 
 </script>
 ```
 
----
+### Writing Equations
 
-## Syntax
+A Golem block is a short text description. Only `formula` is required — everything else has a sensible default.
 
 ```
-formula: y = <expression>        ← required
-domain:  [xMin, xMax]            ← default [-5, 5]
-range:   [yMin, yMax]            ← default [-10, 10]
-label:   <string>                ← optional aria-label
+formula: y = sin(x) * 2      ← the equation (required)
+domain:  [-6.28, 6.28]       ← x-axis range  (default: [-5, 5])
+range:   [-3, 3]             ← y-axis range  (default: [-10, 10])
+label:   My sine wave        ← accessible label (optional)
 style:
-  stroke:      <colour>          ← curve colour
-  width:       <number>          ← stroke width in px
-  gridColor:   subtle | <hex>    ← grid line colour or preset
-  axisColor:   <colour>
-  labelColor:  <colour>
-  background:  <colour>
+  stroke:     #a29bfe        ← curve colour
+  width:      2.5            ← stroke width in px
+  dash:       dashed         ← solid | dashed | dotted | dash-dot
+  gridColor:  subtle         ← grid preset or any hex colour
+  background: #ffffff
 ```
 
-### Expressions (via Math.js)
+**Equation types Golem understands:**
 
-| Example | Notes |
+| Write this | What it graphs |
 |---|---|
-| `y = sin(x) * 2` | Standard explicit |
-| `y = x^3 - 4x` | Implicit multiplication, exponentiation |
-| `y^2 = x^3 - x + 1` | Implicit (elliptic curve) |
-| `x^2 + y^2 = 25` | Implicit (circle) |
-| `sin(y) = cos(x)` | Implicit (transcendental) |
-| `y = e^(-0.15 * x^2) * sin(x)` | Gaussian-modulated sine |
+| `y = sin(x) * 2` | Explicit curve — y as a function of x |
+| `y = x^3 - 4x` | Works with `^` for powers, implicit multiplication |
+| `y^2 = x^3 - x + 1` | Implicit curve (elliptic) — y on both sides |
+| `x^2 + y^2 = 25` | Implicit curve (circle) |
+| `y <= sin(x)` | Shaded region — everything below sin(x) |
+| `x^2 + y^2 <= 16` | Shaded region — filled circle |
 
----
+All expressions use [Math.js](https://mathjs.org) syntax: `sin`, `cos`, `sqrt`, `abs`, `log`, `e`, `pi`, `tau`, `factorial`, and everything else Math.js supports.
 
-## Integrations
+### Multiple Functions on One Graph
 
-| Environment | File | Notes |
-|---|---|---|
-| Vanilla HTML | `integrations/xhtml/golem-auto.js` | One `<script>` tag + MutationObserver |
-| Web Component | `src/golem-element.js` | `<golem-graph formula="...">` custom element |
-| markdown-it | `src/plugins/markdown-it-golem.js` | `md.use(GolemMdPlugin.plugin)` |
-| remark | `integrations/remark/remark-golem.js` | Zero extra dependencies |
-| VS Code | `integrations/vscode/` | Markdown preview via `markdown.markdownItPlugins` |
-| Obsidian | `integrations/obsidian/` | Community plugin, no build step needed |
-| CDN bundle | `src/bundle-entry.js` | `npm run build:min` → `dist/golem.min.js` |
+Use the `functions:` block to overlay multiple equations:
 
----
+```
+domain: [-6.28, 6.28]
+range: [-2, 2]
+style:
+  gridColor: subtle
 
-## Live Playground
-
-The `playground/` directory is a full-featured React SPA:
-
-```bash
-cd playground
-npm install
-npm run dev
-# → http://localhost:5173        (interactive editor)
-# → http://localhost:5173/docs   (full documentation)
+functions:
+  - formula: y = sin(x)
+    label: Sine
+    style:
+      stroke: #a29bfe
+      width: 2.5
+  - formula: y = cos(x)
+    label: Cosine
+    style:
+      stroke: #74b9ff
+      width: 2.5
+      dash: dashed
 ```
 
-Features:
-- Live editor with debounce — renders as you type
-- Example gallery (sine, cubic, elliptic curve, circle, lemniscate…)
-- Four themes (Obsidian, Glacier, Magma, Moonlight)
-- Export as **SVG** or **PNG (2×)**, copy golem block or `<golem-graph>` tag
-- Full inline documentation at `/docs`
+Each function gets its own `style:` block. `domain` and `range` are global.
+
+### Piecewise Functions
+
+Add a `condition:` to any function — it only draws where the condition is true:
+
+```
+functions:
+  - formula: y = x^2
+    condition: x < 0
+    style:
+      stroke: #fd79a8
+  - formula: y = 2*x + 1
+    condition: x >= 0
+    style:
+      stroke: #74b9ff
+```
+
+Conditions support `and`, `or`, `not`, and all comparison operators.
+
+### Shaded Regions
+
+Replace `=` with `<=`, `>=`, `<`, or `>` to shade the region that satisfies the inequality. Golem draws the boundary curve and fills the region with a translucent colour:
+
+```
+formula: y <= sin(x) + 1
+style:
+  stroke: #a29bfe
+  fill: #a29bfe        ← fill colour (defaults to stroke colour)
+  fillOpacity: 0.2     ← 0–1 (default: 0.15)
+```
+
+This works for both explicit (`y <= f(x)`) and implicit (`x^2 + y^2 <= 16`) forms.
+
+### Style Reference
+
+| Key | Default | Description |
+|---|---|---|
+| `stroke` | `#e74c3c` | Curve line colour |
+| `width` | `2` | Stroke width in px |
+| `dash` | `solid` | `solid` · `dashed` · `dotted` · `dash-dot` |
+| `fill` | *(stroke colour)* | Shaded region fill colour |
+| `fillOpacity` | `0.15` | Shaded region opacity (0–1) |
+| `gridColor` | `#e0e0e0` | Grid lines. Presets: `subtle` `strong` `none` |
+| `axisColor` | `#555555` | Axis lines |
+| `labelColor` | `#333333` | Tick label text |
+| `background` | `#ffffff` | SVG background |
+| `frameColor` | `#cccccc` | Outer border |
+
+### Where to Use Golem
+
+| Environment | How |
+|---|---|
+| Any HTML page | One `<script>` tag — see Quick Start above |
+| Web Component | `<golem-graph formula="y = sin(x)">` |
+| Obsidian notes | Copy plugin files to your vault's plugin folder |
+| VS Code preview | Install the extension from `integrations/vscode/` |
+| markdown-it | `md.use(GolemMdPlugin.plugin)` |
+| remark / Astro | `unified().use(remarkGolem)` |
+
+In any Markdown environment that supports fenced code blocks, write:
+
+````
+```golem
+formula: y = x^2
+domain: [-5, 5]
+range: [-1, 26]
+```
+````
 
 ---
 
-## Project Structure
+## For Developers
+
+### Project Structure
 
 ```
 golem/
 ├── src/
-│   ├── golem.js              ← Core: SVG renderer, coordinate mapping, adaptive sampler
-│   ├── parser.js             ← GolemParser: text block → raw config
+│   ├── golem.js              ← Core renderer: SVG, coordinate mapping, adaptive sampler
+│   ├── parser.js             ← GolemParser: text block → raw config object
 │   ├── compiler.js           ← GolemCompiler: config + Math.js → render config
-│   ├── golem-element.js      ← <golem-graph> Custom Element
-│   ├── bundle-entry.js       ← CDN bundle entry point
+│   ├── golem-element.js      ← <golem-graph> Web Component
+│   ├── bundle-entry.js       ← CDN bundle entry (esbuild → dist/)
 │   └── plugins/
 │       └── markdown-it-golem.js
 ├── integrations/
-│   ├── xhtml/
-│   │   └── golem-auto.js     ← Auto-discovery + MutationObserver
-│   ├── remark/
-│   │   └── remark-golem.js   ← remark / unified plugin
+│   ├── xhtml/golem-auto.js   ← Auto-discovery + MutationObserver
+│   ├── remark/remark-golem.js
 │   ├── vscode/               ← VS Code extension
-│   │   ├── extension.js
-│   │   ├── media/
-│   │   │   └── golem-init.js
-│   │   └── package.json
 │   └── obsidian/             ← Obsidian community plugin
-│       ├── main.js
-│       └── manifest.json
-├── playground/               ← React live playground
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── themes.js
-│   │   ├── components/       ← Editor, Preview, Toolbar
-│   │   └── pages/            ← Playground, Docs
-│   └── package.json
-├── demo/
-│   └── index.html            ← Phase 1–3 static demo
-└── docs/
-    └── documentation.md      ← Full reference documentation
+├── playground/               ← React live playground (Vite)
+├── demo/index.html           ← Static demo page
+dist/                         ← Built bundles (git-ignored except for publish)
 ```
 
----
+### JavaScript API
 
-## Development
+```js
+// One-liner: parse → compile → render
+GolemCompiler.fromText(text, '#target', { width: 640, height: 420 });
 
-```bash
-# Run the static demo (no server needed — open demo/index.html directly)
+// Step by step
+const parsed = GolemParser.parse(text);           // → raw config
+const config = GolemCompiler.compile(parsed);     // → { fn, domain, range, style, … }
+const svg    = Golem.render('#target', config);   // → SVGElement
 
-# Or serve everything from the project root:
-npm run demo         # uses npx serve
-
-# Build the CDN bundle:
-npm run build        # readable → dist/golem.js
-npm run build:min    # minified → dist/golem.min.js
-
-# Run the React playground:
-cd playground && npm install && npm run dev
+// Low-level render (no parser/compiler)
+Golem.render('#target', {
+  fn:      (x) => Math.sin(x) * 2,
+  // or:
+  implicitFn: (x, y) => x**2 + y**2 - 25,
+  domain:  [-6.28, 6.28],
+  range:   [-3, 3],
+  width:   640,
+  height:  420,
+  style:   { stroke: '#a29bfe', strokeWidth: 2.5, gridColor: '#ececec' },
+});
 ```
 
----
+`GolemCompiler.fromText` returns the rendered `SVGElement`. All three globals (`Golem`, `GolemParser`, `GolemCompiler`) are available after loading `dist/golem.min.js`.
 
-## Publishing
+### Package CDN
 
-### 1. Build
-
-```bash
-npm run build        # dist/golem.js
-npm run build:min    # dist/golem.min.js
-```
-
-### 2. Configure package.json
-
-Ensure these fields are set before publishing:
-
-```json
-{
-  "name": "golem-graph",
-  "main": "dist/golem.js",
-  "module": "src/bundle-entry.js",
-  "browser": "dist/golem.min.js",
-  "files": ["dist/", "src/", "integrations/"]
-}
-```
-
-### 3. Create .npmignore
-
-```
-playground/
-demo/
-docs/
-.vscode/
-*.test.js
-```
-
-### 4. Publish
-
-```bash
-npm login
-npm publish --dry-run           # verify file list first
-npm publish --access public
-```
-
-### 5. CDN (after publish)
+The package is available via CDN:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/golem-graph/dist/golem.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/golem-graph@1.0.0/dist/golem.min.js"></script>
 ```
 
-### Versioning
+### Coordinate Mapping
 
-```bash
-npm version patch   # 1.0.0 → 1.0.1  (bug fix)
-npm version minor   # 1.0.1 → 1.1.0  (new feature)
-npm version major   # 1.1.0 → 2.0.0  (breaking change)
-git push --follow-tags
-npm publish --access public
-```
+Golem maps math coordinates to SVG pixel space with:
 
----
+$$f_x(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times W \qquad f_y(y) = H - \frac{y - y_{\min}}{y_{\max} - y_{\min}} \times H$$
 
-## Coordinate Mapping
-
-Golem uses the following linear transformation to map math coordinates to SVG pixel space:
-
-$$f_x(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times W$$
-
-$$f_y(y) = H - \left(\frac{y - y_{\min}}{y_{\max} - y_{\min}} \times H\right)$$
-
-where $W$ and $H$ are the inner dimensions after padding is subtracted.
+where $W$ and $H$ are inner dimensions after padding.
 
 ---
 
