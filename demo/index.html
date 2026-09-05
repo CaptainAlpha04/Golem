@@ -367,6 +367,69 @@ style:
   </div>
 
   <!-- ── Phase 3 ──────────────────────────────────────────────────────────── -->
+  <!-- Demo 6b: title + legend -->
+  <div class="demo-card">
+    <header>
+      <h2>Title &amp; legend</h2>
+      <span>title: heading &middot; per-function label: rows &middot; legend: auto placement</span>
+    </header>
+    <golem-graph width="640" height="400">
+      <script type="text/golem">
+title: Trig Comparison
+domain: [-6.28, 6.28]
+range: [-2, 2]
+style:
+  gridColor: subtle
+  legend: auto
+
+functions:
+  - formula: y = sin(x)
+    label: Sine
+    style:
+      stroke: #a29bfe
+      width: 2.5
+  - formula: y = cos(x)
+    label: Cosine
+    style:
+      stroke: #74b9ff
+      width: 2.5
+      dash: dashed
+  - formula: y = sin(x) * cos(x)
+    label: Product
+    style:
+      stroke: #55efc4
+      width: 2
+      dash: dotted
+      </script>
+    </golem-graph>
+  </div>
+
+  <!-- Demo 6c: transparent background -->
+  <div class="demo-card" style="background:
+      repeating-conic-gradient(#e8e8ef 0% 25%, #f7f7fb 0% 50%) 50% / 20px 20px">
+    <header>
+      <h2>Transparent background</h2>
+      <span>background: none &middot; no rect in the SVG at all — the checkerboard shows through</span>
+    </header>
+    <golem-graph width="640" height="380">
+      <script type="text/golem">
+title: Damped Oscillation
+formula: y = e^(-x/4) * cos(3x)
+domain: [0, 12]
+range: [-1, 1]
+style:
+  background: none
+  frameColor: none
+  gridColor: none
+  stroke: #6c5ce7
+  width: 2.5
+  axisColor: #636e72
+  labelColor: #2d3436
+  titleColor: #2d3436
+      </script>
+    </golem-graph>
+  </div>
+
   <div class="phase-section">
     <h2><span class="phase-badge">Phase 3</span> &nbsp;<em>The Life</em> — Integration</h2>
   </div>

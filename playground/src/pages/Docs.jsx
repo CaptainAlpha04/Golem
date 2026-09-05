@@ -8,6 +8,9 @@ const SECTIONS = [
   { id: 'implicit',     label: 'Implicit Equations',     group: 'For Users' },
   { id: 'multi',        label: 'Multiple Functions',     group: 'For Users' },
   { id: 'inequality',   label: 'Shaded Regions',         group: 'For Users' },
+  { id: 'title',        label: 'Titles',                 group: 'For Users' },
+  { id: 'legend',       label: 'Legends',                group: 'For Users' },
+  { id: 'transparency', label: 'Transparency',           group: 'For Users' },
   { id: 'style',        label: 'Style Options',          group: 'For Users' },
   { id: 'themes',       label: 'Themes',                 group: 'For Users' },
   { id: 'vanilla',      label: 'Vanilla HTML',           group: 'Integrations' },
@@ -462,6 +465,136 @@ range:  [-2, 2]`}</Code>
           </Callout>
         </section>
 
+        {/* ── Titles ────────────────────────────────────────────────────── */}
+        <section id="title">
+          <h2>Titles <span className="docs-badge docs-badge-new">New</span></h2>
+          <p>
+            Add <Inline>title:</Inline> to draw a heading above the plot. Golem
+            reserves the vertical space for it automatically.
+          </p>
+          <Code>{`title:   Damped Oscillation
+formula: y = e^(-x/4) * cos(3x)
+domain:  [0, 12]
+range:   [-1, 1]
+style:
+  titleColor: #2d3436     ← defaults to labelColor
+  titleSize:  18          ← defaults to fontSize × 1.6`}</Code>
+          <h3>Titles and screen readers</h3>
+          <p>
+            The graph&rsquo;s accessible name resolves in this order:{' '}
+            <Inline>label:</Inline> → <Inline>title:</Inline> → the formula
+            expression → <Inline>&quot;Golem graph&quot;</Inline>.
+          </p>
+          <p>
+            So <Inline>title:</Inline> names the graph for screen readers as well
+            as sighted readers. Set <Inline>label:</Inline> only when the spoken
+            description should differ from the visible heading — it always wins,
+            and it is never drawn.
+          </p>
+          <Callout>
+            <strong>Spacing:</strong> a title grows the default top padding by{' '}
+            <Inline>titleSize + 10</Inline> px. If you pass an explicit{' '}
+            <Inline>padding</Inline> to <Inline>Golem.render()</Inline>, it is used
+            verbatim and no adjustment is made.
+          </Callout>
+        </section>
+
+        {/* ── Legends ───────────────────────────────────────────────────── */}
+        <section id="legend">
+          <h2>Legends <span className="docs-badge docs-badge-new">New</span></h2>
+          <p>
+            Any function in a <Inline>functions:</Inline> block that carries a{' '}
+            <Inline>label:</Inline> appears in the legend. Each row mirrors its
+            curve&rsquo;s colour, width, and dash pattern.
+          </p>
+          <Code>{`title: Trig Comparison
+domain: [-6.28, 6.28]
+range:  [-2, 2]
+style:
+  legend: auto
+
+functions:
+  - formula: y = sin(x)
+    label: Sine
+    style:
+      stroke: #a29bfe
+  - formula: y = cos(x)
+    label: Cosine
+    style:
+      stroke: #74b9ff
+      dash: dashed`}</Code>
+
+          <h3>Placement</h3>
+          <table className="docs-table">
+            <thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+            <tbody>
+              {[
+                ['auto',         'Picks whichever corner the curves leave emptiest (default)'],
+                ['top-right',    'Pinned to the top-right of the plot area'],
+                ['top-left',     'Pinned to the top-left'],
+                ['bottom-right', 'Pinned to the bottom-right'],
+                ['bottom-left',  'Pinned to the bottom-left'],
+                ['none',         'Suppressed entirely, even when labels are present'],
+              ].map(([v, d]) => (
+                <tr key={v}><td>{v}</td><td>{d}</td></tr>
+              ))}
+            </tbody>
+          </table>
+
+          <Callout>
+            <strong>How <Inline>auto</Inline> works:</strong> Golem scores all four
+            corner boxes by how many plotted curve points fall inside each one and
+            takes the clearest, so the legend gets out of the curve&rsquo;s way on
+            its own. Because the score comes from the points actually plotted, it
+            works for implicit curves too.
+          </Callout>
+
+          <h3>Rules</h3>
+          <ul>
+            <li>
+              Single-function graphs (<Inline>formula:</Inline> rather than{' '}
+              <Inline>functions:</Inline>) never draw a legend — use{' '}
+              <Inline>title:</Inline> instead.
+            </li>
+            <li>A <Inline>functions:</Inline> block with no labels draws no legend.</li>
+            <li>Unlabelled functions in an otherwise-labelled block are skipped.</li>
+          </ul>
+        </section>
+
+        {/* ── Transparency ──────────────────────────────────────────────── */}
+        <section id="transparency">
+          <h2>Transparency <span className="docs-badge docs-badge-new">New</span></h2>
+          <p>
+            <Inline>background: none</Inline> omits the backdrop entirely rather
+            than painting a white one, so the graph blends into whatever page it
+            lands on — light or dark.
+          </p>
+          <Code>{`formula: y = sin(x)
+style:
+  background: none
+  gridColor:  none
+  frameColor: none
+  stroke:     #a29bfe
+  labelColor: #cdd6f4`}</Code>
+          <p>
+            The rect is genuinely absent from the saved SVG, not merely invisible.
+            Grid, axes, and frame are independent — <Inline>gridColor</Inline>,{' '}
+            <Inline>axisColor</Inline>, and <Inline>frameColor</Inline> each accept{' '}
+            <Inline>none</Inline> on their own, so you can strip as much or as
+            little chrome as you like.
+          </p>
+          <Callout>
+            <strong>In the playground:</strong> a transparent graph is shown over a
+            checkerboard so you can see through it. The checkerboard is a preview
+            aid only — it is not part of the exported SVG.
+          </Callout>
+          <p>
+            The legend&rsquo;s backdrop is dropped on a transparent graph too, so
+            it does not paint an opaque patch onto a deliberately see-through
+            render. Legend text and swatches still draw normally.
+          </p>
+        </section>
+
         {/* ── Style Options ─────────────────────────────────────────────── */}
         <section id="style">
           <h2>Style Options</h2>
@@ -473,12 +606,18 @@ range:  [-2, 2]`}</Code>
               {[
                 ['stroke',      '—',           '#e74c3c',  'Curve stroke colour'],
                 ['width',       'strokeWidth',  '2',        'Curve stroke width (px). "px" suffix optional.'],
+                ['dash',        '—',            'solid',    'solid · dashed · dotted · dash-dot'],
                 ['gridColor',   'grid',         '#e0e0e0',  'Grid line colour. Accepts colour presets (see below).'],
                 ['axisColor',   'axis',         '#555555',  'Axis line colour'],
-                ['labelColor',  'label',        '#333333',  'Tick label colour'],
-                ['fontSize',    'font-size',    '11',       'Tick label font size (px)'],
-                ['background',  'bg',           '#ffffff',  'SVG background fill colour'],
+                ['labelColor',  'label',        '#333333',  'Tick and legend label colour'],
+                ['fontSize',    'font-size',    '11',       'Tick and legend label font size (px)'],
+                ['background',  'bg',           '#ffffff',  'SVG background fill. "none" omits the backdrop entirely.'],
                 ['frameColor',  '—',            '#cccccc',  'Border rect colour'],
+                ['titleColor',  'title-color',  'labelColor', 'title: text colour'],
+                ['titleSize',   'title-size',   'fontSize × 1.6', 'title: font size (px)'],
+                ['legend',      '—',            'auto',     'auto · top-right · top-left · bottom-right · bottom-left · none'],
+                ['fill',        '—',            'stroke',   'Shaded region fill colour'],
+                ['fillOpacity', 'fill-opacity', '0.15',     'Shaded region opacity (0–1)'],
               ].map(([k, a, d, desc]) => (
                 <tr key={k}>
                   <td>{k}</td>
@@ -576,8 +715,11 @@ formula: y = sin(x)
           <h2>Integration — Web Component</h2>
           <p>
             The <Inline>{'<golem-graph>'}</Inline> custom element works in any HTML
-            or XHTML page. Include <Inline>golem-element.js</Inline> once and use
-            the element anywhere in the document.
+            or XHTML page. It ships inside the CDN bundle, so loading{' '}
+            <Inline>dist/golem.min.js</Inline> registers it automatically — no extra
+            script tag needed. When loading the source files individually, include{' '}
+            <Inline>golem-element.js</Inline> after <Inline>golem.js</Inline>,{' '}
+            <Inline>parser.js</Inline>, and <Inline>compiler.js</Inline>.
           </p>
           <h3>Attribute-style (quick)</h3>
           <Code>{`<golem-graph

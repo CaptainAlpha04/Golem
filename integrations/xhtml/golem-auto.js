@@ -34,6 +34,11 @@
 (function GolemAuto() {
   'use strict';
 
+  // Auto-discovery is meaningless without a document, and this file is bundled
+  // into dist/golem.js — which server-side renderers may evaluate. Bail out
+  // rather than throwing on `window`.
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
   const cfg = window.GolemAutoConfig ?? {};
   const OVERRIDES = {
     width:  cfg.width  ?? 620,
@@ -81,9 +86,24 @@
 
   // ── Main scan ────────────────────────────────────────────────────────────
 
+  /**
+   * querySelectorAll only ever looks at descendants, never at the root itself.
+   * When the MutationObserver hands us a freshly-inserted <pre class="golem">,
+   * that node IS the block — so each selector is matched against the root as
+   * well as its subtree. Without this, injecting a bare golem block renders
+   * nothing and only wrapper-inside-wrapper insertions work.
+   */
+  function matches(root, selector) {
+    const found = Array.from(root.querySelectorAll(selector));
+    if (typeof root.matches === 'function' && root.matches(selector)) {
+      found.unshift(root);
+    }
+    return found;
+  }
+
   function scan(root = document) {
     // <pre class="golem">
-    for (const pre of root.querySelectorAll(SEL_PRE)) {
+    for (const pre of matches(root, SEL_PRE)) {
       pre.setAttribute('data-golem-rendered', '1');
       const host = document.createElement('div');
       pre.replaceWith(host);
@@ -91,7 +111,7 @@
     }
 
     // <pre><code class="language-golem">
-    for (const code of root.querySelectorAll(SEL_CODE)) {
+    for (const code of matches(root, SEL_CODE)) {
       const pre = code.parentElement;
       pre.setAttribute('data-golem-rendered', '1');
       const host = document.createElement('div');
@@ -100,7 +120,7 @@
     }
 
     // placeholder divs (from markdown-it / remark plugins)
-    for (const el of root.querySelectorAll(SEL_HOLDER)) {
+    for (const el of matches(root, SEL_HOLDER)) {
       renderFromBase64(el);
     }
   }

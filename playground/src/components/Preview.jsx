@@ -46,6 +46,13 @@ export function Preview({ code, theme, onSvgReady }) {
       const config = window.GolemCompiler.compile(parsed);
       // Theme provides base style; user block overrides specific keys on top
       config.style = { ...themeRef.current.graph, ...config.style };
+
+      // A transparent graph paints no backdrop, so it would otherwise be
+      // indistinguishable from the panel behind it. Flag it for the
+      // checkerboard in index.css.
+      const bg = config.style.background;
+      container.classList.toggle('is-transparent', bg === 'none' || bg === 'transparent');
+
       window.Golem.render(container, { ...config, width: w, height: h });
       onSvgReady?.(container.querySelector('svg'));
     } catch (e) {

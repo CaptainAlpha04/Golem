@@ -9,16 +9,20 @@
  *   formula: y = <expr>
  *   domain:  [xMin, xMax]
  *   range:   [yMin, yMax]
- *   label:   <string>
+ *   title:   <string>          ← visible heading drawn above the plot
+ *   label:   <string>          ← accessible name only (never drawn)
  *   style:
  *     stroke:      <css-color>
  *     width:       <number>      ← maps → strokeWidth
  *     strokeWidth: <number>
  *     dash:        solid|dashed|dotted   ← line style
- *     background:  <css-color>
+ *     background:  <css-color>   ← "none" omits the backdrop entirely
  *     gridColor:   <css-color>   ← preset names: subtle, strong, none
  *     axisColor:   <css-color>
  *     labelColor:  <css-color>
+ *     titleColor:  <css-color>   ← defaults to labelColor
+ *     titleSize:   <number>      ← defaults to fontSize × 1.6
+ *     legend:      auto|top-right|top-left|bottom-right|bottom-left|none
  *
  * ── Multi-function format ─────────────────────────────────────────────────
  *
@@ -103,7 +107,7 @@ const GolemParser = (() => {
           const rest = trimmed.slice(2).trim();
           if (rest) {
             const { key, value } = splitLine(rest);
-            if (key) applyFnKey(curFn, key, value, indent);
+            if (key) applyFnKey(curFn, key, value);
           }
           continue;
         }
@@ -126,7 +130,7 @@ const GolemParser = (() => {
             mode = 'fn-style';
             curFnStyleIndent = indent;
           } else if (key) {
-            applyFnKey(curFn, key, value, indent);
+            applyFnKey(curFn, key, value);
           }
           continue;
         }
@@ -255,7 +259,11 @@ const GolemParser = (() => {
   }
 
   function parseStyleValue(key, value) {
-    const NUMERIC_KEYS = ['width', 'strokeWidth', 'stroke-width', 'fontSize', 'font-size'];
+    const NUMERIC_KEYS = [
+      'width', 'strokeWidth', 'stroke-width',
+      'fontSize', 'font-size', 'titleSize', 'title-size',
+      'fillOpacity', 'fill-opacity',
+    ];
     if (NUMERIC_KEYS.includes(key)) return parseFloat(value);
     if (/^-?[\d.]+(?:px|em|rem|pt)$/i.test(value)) return parseFloat(value);
     return value;

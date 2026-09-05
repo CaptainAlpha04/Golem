@@ -8,7 +8,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Math.js — expression evaluator, required by GolemCompiler -->
     <script src="https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.min.js"></script>
-    <!-- Golem — served from CDN (published package) -->
+    <!--
+      Golem — served from CDN (published package).
+      Deliberately still pinned to 1.0.1: titles, legends, and transparent
+      backgrounds land in 1.1.0, so bump this pin only AFTER `npm publish`
+      puts 1.1.0 on the registry, or the deployed playground 404s.
+    -->
     <script src="https://cdn.jsdelivr.net/npm/golem-graph@1.0.1/dist/golem.min.js"></script>
   </head>
   <body>

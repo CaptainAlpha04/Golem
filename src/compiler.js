@@ -21,7 +21,15 @@ const GolemCompiler = (() => {
     'grid':               'gridColor',
     'axis':               'axisColor',
     'label':              'labelColor',
+    'title-color':        'titleColor',
+    'title-size':         'titleSize',
+    'fill-opacity':       'fillOpacity',
   };
+
+  // Style keys whose values are keywords, not colours. Without this, the
+  // "none" preset below would silently rewrite `legend: none` and `dash: none`
+  // into `transparent`.
+  const NON_COLOR_KEYS = new Set(['legend', 'dash']);
 
   // Named presets for grid / axis / label colors
   const COLOR_PRESETS = {
@@ -47,7 +55,8 @@ const GolemCompiler = (() => {
     const out = {};
     for (const [k, v] of Object.entries(raw)) {
       const key = normalizeKey(k);
-      out[key] = (typeof v === 'string') ? resolveColor(v) : v;
+      const isColor = typeof v === 'string' && !NON_COLOR_KEYS.has(key);
+      out[key] = isColor ? resolveColor(v) : v;
     }
     return out;
   }
@@ -143,8 +152,12 @@ const GolemCompiler = (() => {
       );
     }
 
-    const { domain, range, label, style = {}, functions } = parsed;
+    const { domain, range, title, label, style = {}, functions } = parsed;
     const globalStyle = normalizeStyle(style);
+
+    // Accessible name: an explicit `label:` wins, then the visible `title:`,
+    // and finally (below) the formula expression itself.
+    const ariaFor = (fallback) => label ?? title ?? fallback;
 
     // ── Multi-function block ───────────────────────────────────────────
     if (functions && functions.length > 0) {
@@ -160,7 +173,9 @@ const GolemCompiler = (() => {
           fn,
           implicitFn,
           inequality,
-          label: fnDef.label ?? (fnDef.formula?.expr ?? `f${idx + 1}`),
+          // Deliberately null when the author supplied no label: the renderer
+          // uses "some function is labelled" as the signal to draw a legend.
+          label: fnDef.label ?? null,
           style: fnStyle,
         };
       });
@@ -169,7 +184,8 @@ const GolemCompiler = (() => {
         functions: compiledFunctions,
         domain:    domain ?? [-5, 5],
         range:     range  ?? [-5, 5],
-        label:     label  ?? '',
+        title:     title  ?? null,
+        label:     ariaFor(''),
         style:     globalStyle,
       };
     }
@@ -187,7 +203,8 @@ const GolemCompiler = (() => {
         inequality,
         domain: domain ?? [-5, 5],
         range:  range  ?? [-5, 5],
-        label:  label  ?? formula.expr,
+        title:  title  ?? null,
+        label:  ariaFor(formula.expr),
         style:  fnStyle,
       };
     }
@@ -197,7 +214,8 @@ const GolemCompiler = (() => {
       inequality,
       domain: domain ?? [-5, 5],
       range:  range  ?? [-10, 10],
-      label:  label  ?? formula.expr,
+      title:  title  ?? null,
+      label:  ariaFor(formula.expr),
       style:  fnStyle,
     };
   }

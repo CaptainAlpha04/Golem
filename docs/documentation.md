@@ -9,18 +9,22 @@
 5. [Explicit Equations](#explicit-equations)
 6. [Implicit Equations](#implicit-equations)
 7. [Style Reference](#style-reference)
-8. [Themes](#themes)
-9. [Integration — Vanilla HTML / XHTML](#integration--vanilla-html--xhtml)
-10. [Integration — Web Component](#integration--web-component)
-11. [Integration — markdown-it](#integration--markdown-it)
-12. [Integration — remark](#integration--remark)
-13. [Integration — VS Code Extension](#integration--vs-code-extension)
-14. [Integration — Obsidian Plugin](#integration--obsidian-plugin)
-15. [API Reference](#api-reference)
-16. [Bundling and the CDN Path](#bundling-and-the-cdn-path)
-17. [Coordinate Mapping Mathematics](#coordinate-mapping-mathematics)
-18. [Adaptive Sampling Algorithm](#adaptive-sampling-algorithm)
-19. [Marching Squares (Implicit Curves)](#marching-squares-implicit-curves)
+8. [Titles](#titles)
+9. [Legends](#legends)
+10. [Transparent Backgrounds](#transparent-backgrounds)
+11. [Themes](#themes)
+12. [Integration — Vanilla HTML / XHTML](#integration--vanilla-html--xhtml)
+13. [Integration — Web Component](#integration--web-component)
+14. [Integration — markdown-it](#integration--markdown-it)
+15. [Integration — remark](#integration--remark)
+16. [Integration — VS Code Extension](#integration--vs-code-extension)
+17. [Integration — Obsidian Plugin](#integration--obsidian-plugin)
+18. [API Reference](#api-reference)
+19. [Bundling and the CDN Path](#bundling-and-the-cdn-path)
+20. [Coordinate Mapping Mathematics](#coordinate-mapping-mathematics)
+21. [Adaptive Sampling Algorithm](#adaptive-sampling-algorithm)
+22. [Marching Squares (Implicit Curves)](#marching-squares-implicit-curves)
+23. [Testing](#testing)
 
 ---
 
@@ -108,7 +112,8 @@ A Golem block is a simple YAML-inspired key-value format. Only `formula` is requ
 formula: <expression>           required
 domain:  [<min>, <max>]         default: [-5, 5]
 range:   [<min>, <max>]         default: [-10, 10]
-label:   <string>               default: formula string (used as SVG aria-label)
+title:   <string>               optional — drawn above the plot
+label:   <string>               default: title, else formula string (SVG aria-label)
 style:                          optional sub-block
   stroke:      <colour>
   width:       <number>[px]
@@ -117,8 +122,11 @@ style:                          optional sub-block
   axisColor:   <colour>
   labelColor:  <colour>
   fontSize:    <number>
-  background:  <colour>
+  background:  <colour>         "none" omits the backdrop entirely
   frameColor:  <colour>
+  titleColor:  <colour>
+  titleSize:   <number>
+  legend:      <position|none>
 ```
 
 **Rules:**
@@ -184,9 +192,17 @@ All style keys can be specified inside the `style:` block of a golem text block,
 | `gridColor` | `grid` | colour \| preset | `#e0e0e0` | Grid line colour |
 | `axisColor` | `axis` | colour | `#555555` | Axis line colour |
 | `labelColor` | `label` | colour | `#333333` | Tick label colour |
-| `fontSize` | `font-size` | number | `11` | Tick label font size (px) |
-| `background` | `bg`, `background-color` | colour | `#ffffff` | SVG background fill |
+| `fontSize` | `font-size` | number | `11` | Tick and legend label font size (px) |
+| `background` | `bg`, `background-color` | colour | `#ffffff` | SVG background fill. `none` omits the rect |
 | `frameColor` | — | colour | `#cccccc` | Border rect colour |
+| `titleColor` | `title-color` | colour | *(labelColor)* | `title:` text colour |
+| `titleSize` | `title-size` | number | *(fontSize × 1.6)* | `title:` font size (px) |
+| `legend` | — | keyword | `auto` | Legend placement — see below |
+| `fill` | — | colour | *(stroke)* | Shaded region fill colour |
+| `fillOpacity` | `fill-opacity` | number | `0.15` | Shaded region opacity (0–1) |
+
+`legend` and `dash` take keywords rather than colours, so `legend: none` and
+`dash: none` are left alone by the colour-preset table below.
 
 ### gridColor presets
 
@@ -201,6 +217,122 @@ These named values can be used instead of a hex colour:
 | `obsidian` | `#2c2c3e` | Dark theme grid |
 | `glacier` | `#d0eaf8` | Cool blue grid |
 | `magma` | `#fce3c8` | Warm grid |
+
+---
+
+## Titles
+
+`title:` draws a heading above the plot area:
+
+```
+title:   Damped Oscillation
+formula: y = e^(-x/4) * cos(3x)
+domain:  [0, 12]
+range:   [-1, 1]
+style:
+  titleColor: #2d3436
+  titleSize:  18
+```
+
+The title is centred on the canvas and rendered as a `<text class="golem-title">`
+element. When a title is present, Golem grows the default top padding by
+`titleSize + 10` px so the heading never collides with the frame. Supplying an
+explicit `padding` to `Golem.render()` disables that adjustment — the padding you
+pass is used verbatim.
+
+### Title and accessibility
+
+The SVG's `aria-label` resolves in this order:
+
+```
+label:  →  title:  →  formula expression  →  "Golem graph"
+```
+
+So `title:` names the graph for screen readers as well as sighted users. Set
+`label:` when the spoken description should differ from the visible heading;
+`label:` is never drawn.
+
+---
+
+## Legends
+
+Any function in a `functions:` block that carries a `label:` appears in the
+legend. The legend is drawn last so it sits above the curves, and each row
+mirrors its curve's `stroke`, `strokeWidth`, and `dash`.
+
+```
+title: Trig Comparison
+domain: [-6.28, 6.28]
+range:  [-2, 2]
+style:
+  legend: auto
+
+functions:
+  - formula: y = sin(x)
+    label: Sine
+    style:
+      stroke: #a29bfe
+  - formula: y = cos(x)
+    label: Cosine
+    style:
+      stroke: #74b9ff
+      dash: dashed
+```
+
+### Placement
+
+| `legend:` value | Behaviour |
+|---|---|
+| `auto` *(default)* | Chooses whichever corner the curves leave emptiest |
+| `top-right` | Pinned to the top-right of the plot area |
+| `top-left` | Pinned to the top-left |
+| `bottom-right` | Pinned to the bottom-right |
+| `bottom-left` | Pinned to the bottom-left |
+| `none` | Suppressed entirely, even when labels are present |
+
+`auto` scores each of the four corner boxes by how many plotted curve points fall
+inside it and picks the lowest. Ties break in the order top-right, top-left,
+bottom-right, bottom-left. Because the score is computed from the points actually
+plotted, it works for implicit curves too — marching-squares crossings are points
+like any other.
+
+### Rules
+
+- Single-function graphs (`formula:` rather than `functions:`) never draw a
+  legend; use `title:` instead.
+- A `functions:` block whose entries carry no `label:` draws no legend.
+- Unlabelled functions inside an otherwise-labelled block are simply skipped.
+- Label text width is *estimated* as `characters × fontSize × 0.6` rather than
+  measured. SVG offers no layout-free text measurement, and an estimate keeps
+  rendering deterministic.
+
+---
+
+## Transparent Backgrounds
+
+`background: none` (or `transparent`) omits the background `<rect>` from the SVG
+altogether rather than painting a white one:
+
+```
+formula: y = sin(x)
+style:
+  background: none
+  gridColor:  none
+  frameColor: none
+  stroke:     #a29bfe
+  labelColor: #cdd6f4
+```
+
+The rect is genuinely absent from the output, so a saved or embedded SVG carries
+no backdrop and the host page — light or dark — shows straight through.
+
+Grid, axes, and frame are independent: `gridColor`, `axisColor`, and `frameColor`
+each accept `none` on their own, so you can strip as much or as little chrome as
+you want.
+
+One knock-on: the legend's backdrop rect is also omitted on a transparent graph,
+so the legend does not paint an opaque patch onto a deliberately see-through
+render. Legend text and swatches still draw normally.
 
 ---
 
@@ -270,6 +402,15 @@ The MutationObserver watches `document.body` with `{ childList: true, subtree: t
 **File:** `src/golem-element.js`
 
 The `<golem-graph>` Custom Element works in any HTML or XHTML document. Load the script once and use the element anywhere.
+
+`golem-element.js` is part of the CDN bundle, so loading `dist/golem.min.js`
+registers `<golem-graph>` automatically — no extra script tag is needed. When
+loading the source files individually, include `golem-element.js` after
+`golem.js`, `parser.js`, and `compiler.js`.
+
+Registration is guarded: requiring the bundle from Node (where `HTMLElement` and
+`customElements` do not exist) is a no-op rather than a crash. The bundle also
+exports `defineGolemGraph()` if you need to register the element manually.
 
 ### Attribute style
 
@@ -494,7 +635,8 @@ Golem.render('#my-div', {
   width:   640,
   height:  420,
   padding: { top: 30, right: 30, bottom: 40, left: 50 },   // optional
-  label:   'My graph',
+  title:   'My graph',                // drawn above the plot
+  label:   'My graph',                // aria-label only
   style: {
     stroke:      '#2ecc71',
     strokeWidth: 2.5,
@@ -505,6 +647,38 @@ Golem.render('#my-div', {
   },
 });
 ```
+
+Multi-function form, with a legend:
+
+```js
+Golem.render('#my-div', {
+  domain: [-6.28, 6.28],
+  range:  [-2, 2],
+  functions: [
+    { type: 'explicit', fn: Math.sin, label: 'Sine',   style: { stroke: '#a29bfe' } },
+    { type: 'explicit', fn: Math.cos, label: 'Cosine', style: { stroke: '#74b9ff' } },
+  ],
+  style: { legend: 'auto' },
+});
+```
+
+A function whose `label` is `null` or omitted is skipped in the legend; if no
+function has one, no legend is drawn.
+
+**Class hooks on the output.** The rendered SVG carries stable class names for
+styling and testing:
+
+| Class | Element |
+|---|---|
+| `golem-background` | Background rect (absent when transparent) |
+| `golem-title` | Title text |
+| `golem-grid` / `golem-axes` / `golem-labels` | Grid, axis, and tick-label groups |
+| `golem-curve` | Each plotted curve path |
+| `golem-frame` | Outer border rect |
+| `golem-legend` | Legend group |
+| `golem-legend-box` | Legend backdrop (absent when transparent) |
+| `golem-legend-row` | One row per labelled function |
+| `golem-legend-swatch` / `golem-legend-label` | Swatch line and its text |
 
 ---
 
@@ -570,8 +744,21 @@ Explicit curves use an adaptive refinement algorithm to minimize point count whi
 
 1. **Base pass** — sample `fn(x)` at 200 evenly-spaced points across the domain.
 2. **Refinement pass** — for each adjacent pair $(x_0, y_0)$ and $(x_1, y_1)$, compute the midpoint $x_m = \frac{x_0 + x_1}{2}$ and evaluate $y_m = f(x_m)$.
-3. **Deviation check** — if $|y_m - \frac{y_0 + y_1}{2}| > \text{threshold}$ (default `0.001`), insert the midpoint.
+3. **Deviation check** — if $|y_m - \frac{y_0 + y_1}{2}| > \text{threshold}$, insert the midpoint.
 4. Repeat up to `maxDepth = 6` times.
+
+### The threshold is relative, not absolute
+
+The deviation threshold is a *fraction* of the visible vertical span:
+
+$$\text{threshold} = 0.001 \times (y_{\max} - y_{\min})$$
+
+This makes sampling density depend on the **shape** of a curve rather than the
+units it happens to be drawn in. With a fixed absolute threshold,
+`y = 500·sin(x)` over `range: [-1000, 1000]` would refine to maximum depth
+everywhere — roughly 12,800 points for a plain sine wave — while the identical
+shape over `range: [-2, 2]` would barely refine at all. Scaling by the range
+makes the two produce the same output.
 
 Discontinuities (where `fn(x)` throws or returns non-finite values) lift the pen, producing a broken path rather than a spurious vertical line.
 
@@ -719,3 +906,41 @@ npm version patch
 git push --follow-tags
 npm publish --access public
 ```
+
+---
+
+## Testing
+
+The test suite uses Node's built-in runner — no test framework, no dependencies:
+
+```bash
+npm test
+```
+
+### Structure
+
+| File | Covers |
+|---|---|
+| `test/helpers.js` | Fake DOM and stub Math.js used by the other suites |
+| `test/parser.test.js` | Text block → raw config, including titles, labels, and piecewise blocks |
+| `test/compiler.test.js` | Style normalisation, aria-label fallback order, title threading |
+| `test/render.test.js` | SVG output: titles, legends, transparency, tick-label clamping, sampling |
+
+### The fake DOM
+
+`Golem.render()` needs `document.createElementNS`. Rather than pull in jsdom —
+a heavy dependency for an otherwise dependency-free package — `test/helpers.js`
+provides the handful of DOM methods the renderer actually uses: `setAttribute`,
+`getAttribute`, `appendChild`, `textContent`, and an `innerHTML` setter for
+clearing. It adds `find(tag)` and `all()` helpers so assertions can walk the
+rendered tree.
+
+Renderer tests pass a fake element straight to `Golem.render()` as the target,
+exercising the non-string branch and bypassing `querySelector` entirely.
+
+### The stub Math.js
+
+Compiler tests inject a stub via `compile(parsed, mathInstance)` rather than
+depending on the real Math.js. The stub records the expression it was handed and
+returns a fixed value, which is all the plumbing tests need. Renderer tests skip
+the compiler altogether and supply plain JavaScript closures as `fn`.

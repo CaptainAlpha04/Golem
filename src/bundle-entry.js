@@ -26,7 +26,7 @@ const GolemCompiler = require('./compiler.js');
 const GolemMdPlugin = require('./plugins/markdown-it-golem.js');
 
 // 2. Register globals so CDN users can call window.GolemCompiler.fromText(...)
-//    and so golem-auto.js (loaded next) can find them on window.
+//    and so golem-element.js / golem-auto.js (loaded next) can find them.
 if (typeof window !== 'undefined') {
   window.Golem         = Golem;
   window.GolemParser   = GolemParser;
@@ -34,11 +34,14 @@ if (typeof window !== 'undefined') {
   window.GolemMdPlugin = GolemMdPlugin;
 }
 
-// 3. Auto-discovery — scans the page and sets up MutationObserver.
-//    Must run AFTER the globals above are assigned.
+// 3. <golem-graph> custom element. Must come AFTER the globals above, because
+//    the element resolves GolemCompiler off the global scope when it renders.
+const { defineGolemGraph } = require('./golem-element.js');
+
+// 4. Auto-discovery — scans the page and sets up MutationObserver.
 require('../integrations/xhtml/golem-auto.js');
 
-// 4. Export a clean API surface for programmatic / module-bundler use.
+// 5. Export a clean API surface for programmatic / module-bundler use.
 //    With --format=iife --global-name=GolemBundle, this becomes window.GolemBundle.
-module.exports = { Golem, GolemParser, GolemCompiler, GolemMdPlugin };
+module.exports = { Golem, GolemParser, GolemCompiler, GolemMdPlugin, defineGolemGraph };
 
