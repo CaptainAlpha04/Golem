@@ -326,8 +326,41 @@ Rendered SVGs carry stable class hooks for styling and testing: `golem-backgroun
 The package is available via CDN:
 
 ```html
+<!-- Latest 1.x — picks up releases automatically -->
+<script src="https://cdn.jsdelivr.net/npm/golem-graph@1/dist/golem.min.js"></script>
+
+<!-- Or pin exactly, if you'd rather upgrade deliberately -->
 <script src="https://cdn.jsdelivr.net/npm/golem-graph@1.1.0/dist/golem.min.js"></script>
 ```
+
+`@1` is a semver range, so jsDelivr serves the newest 1.x and never a breaking
+2.0. The playground uses this form; edge caches resolve it within ~12 hours of a
+release.
+
+### Releasing
+
+Releases are automated. Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org):
+
+| Prefix | Effect on the next release |
+|---|---|
+| `fix:` | Patch bump — `1.1.0 → 1.1.1` |
+| `feat:` | Minor bump — `1.1.0 → 1.2.0` |
+| `feat!:` or a `BREAKING CHANGE:` footer | Major bump — `1.1.0 → 2.0.0` |
+| `docs:` `refactor:` `perf:` | Appear in the changelog, no bump on their own |
+| `chore:` `test:` `ci:` `build:` | No release |
+
+Pushing to `main` keeps a `chore(release): x.y.z` pull request open, with the
+version bump and a generated `CHANGELOG.md`. **Merging that PR** tags the release
+and publishes to npm — nothing reaches the registry without that merge.
+
+Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers):
+GitHub Actions authenticates over OIDC, so there is no npm token stored in the
+repo and every release carries a provenance attestation. `prepublishOnly` runs
+the full test suite and both builds first, so a broken tree cannot ship.
+
+CI runs the suite on Node 20, 22, and 24 for every push and pull request, and
+separately builds the playground.
 
 ### Coordinate Mapping
 

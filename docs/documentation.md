@@ -889,23 +889,79 @@ Once published, the bundle is available on two CDNs within minutes:
 <script src="https://cdn.jsdelivr.net/npm/golem-graph@1.0.0/dist/golem.min.js"></script>
 ```
 
-### 7. Versioning
+### 7. Versioning and release automation
 
-Follow [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`
+Versions are **not** bumped by hand. `release-please` derives them from
+[Conventional Commit](https://www.conventionalcommits.org) messages on `main`.
 
-| Change type | Command | Example |
-|---|---|---|
-| Bug fix, no API change | `npm version patch` | `1.0.0 → 1.0.1` |
-| New feature, backwards-compatible | `npm version minor` | `1.0.1 → 1.1.0` |
-| Breaking API change | `npm version major` | `1.1.0 → 2.0.0` |
+| Prefix | Effect on the next release |
+|---|---|
+| `fix:` | Patch — `1.1.0 → 1.1.1` |
+| `feat:` | Minor — `1.1.0 → 1.2.0` |
+| `feat!:`, or any commit with a `BREAKING CHANGE:` footer | Major — `1.1.0 → 2.0.0` |
+| `docs:` `refactor:` `perf:` `revert:` | Listed in the changelog, no bump on their own |
+| `chore:` `test:` `ci:` `build:` | No release |
 
-`npm version` updates `package.json` and creates a git tag automatically:
+#### The flow
 
-```bash
-npm version patch
-git push --follow-tags
-npm publish --access public
 ```
+push a feat:/fix: commit to main
+        │
+        ▼
+.github/workflows/release.yml → release-please
+        │
+        ▼
+opens or updates a PR: "chore(release): 1.2.0"
+  • package.json version bumped
+  • CHANGELOG.md regenerated
+        │
+        ▼  (you merge it — this is the only gate)
+tag v1.2.0 + GitHub release
+        │
+        ▼
+publish job: npm ci → npm publish
+  prepublishOnly runs the tests and both builds first
+```
+
+Nothing reaches the registry without merging that PR. Batch several features
+into one release by simply leaving it open.
+
+#### Authentication
+
+Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers).
+The workflow requests an OIDC token (`permissions: id-token: write`) and npm
+verifies the workflow identity directly, so:
+
+- there is **no `NPM_TOKEN`** stored in the repository,
+- every published version carries a **provenance attestation** linking it to the
+  commit and workflow run that built it.
+
+The publish step deliberately sets no `NODE_AUTH_TOKEN`. It also upgrades npm
+first, because trusted publishing needs npm ≥ 11.5.1 — newer than the npm
+bundled with Node 22.
+
+#### One-time setup
+
+Two settings have to be enabled by a repository/package owner before the first
+automated release:
+
+1. **npmjs.com** → the `golem-graph` package → *Settings* → *Trusted Publisher*.
+   Add the GitHub repository `CaptainAlpha04/Golem` and the workflow
+   `release.yml`.
+2. **GitHub** → *Settings* → *Actions* → *General* → enable
+   *Allow GitHub Actions to create and approve pull requests*, so release-please
+   can open its release PR.
+
+#### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main`:
+
+- the full test suite on Node 20, 22, and 24;
+- both bundle builds;
+- two guards on the built bundle, since `dist/` is git-ignored and nothing else
+  would catch a bundle that builds but is broken — that it still registers
+  `<golem-graph>`, and that it loads without a DOM;
+- a separate job building the playground.
 
 ---
 
@@ -925,6 +981,7 @@ npm test
 | `test/parser.test.js` | Text block → raw config, including titles, labels, and piecewise blocks |
 | `test/compiler.test.js` | Style normalisation, aria-label fallback order, title threading |
 | `test/render.test.js` | SVG output: titles, legends, transparency, tick-label clamping, sampling |
+| `test/e2e.test.js` | The whole pipeline driven by the real Math.js |
 
 ### The fake DOM
 
@@ -944,3 +1001,11 @@ Compiler tests inject a stub via `compile(parsed, mathInstance)` rather than
 depending on the real Math.js. The stub records the expression it was handed and
 returns a fixed value, which is all the plumbing tests need. Renderer tests skip
 the compiler altogether and supply plain JavaScript closures as `fn`.
+
+### End-to-end tests
+
+Stubs cannot catch integration bugs, so `test/e2e.test.js` drives the real
+pipeline — `GolemParser.parse` → `GolemCompiler.compile` → `Golem.render` — with
+the actual Math.js, asserting on the rendered SVG. Math.js is an optional peer
+dependency, so those tests skip cleanly when it is absent and the suite stays
+runnable with nothing installed. `npm install` pulls it in as a devDependency.

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit and end-to-end tests
+        run: npm test
+
+      - name: Build both bundles
+        run: |
+          npm run build
+          npm run build:min
+
+      # dist/ is git-ignored, so nothing else would catch a bundle that builds
+      # but is broken. These are the two regressions that actually shipped
+      # before: the custom element silently missing, and the bundle throwing
+      # on any DOM-less evaluation.
+      - name: Bundle registers <golem-graph>
+        run: grep -q 'customElements' dist/golem.js
+
+      - name: Bundle loads without a DOM
+        run: node -e "require('./dist/golem.js')"
+
+  playground:
+    name: Playground build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: playground/package-lock.json
+
+      - run: npm ci
+        working-directory: playground
+
+      - run: npm run build
+        working-directory: playground

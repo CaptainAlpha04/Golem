@@ -10,11 +10,11 @@
     <script src="https://cdn.jsdelivr.net/npm/mathjs@13/lib/browser/math.min.js"></script>
     <!--
       Golem — served from CDN (published package).
-      Deliberately still pinned to 1.0.1: titles, legends, and transparent
-      backgrounds land in 1.1.0, so bump this pin only AFTER `npm publish`
-      puts 1.1.0 on the registry, or the deployed playground 404s.
+      `@1` is a semver range, not an exact pin: jsDelivr resolves it to the
+      newest 1.x, so a release reaches the playground on its own and this line
+      never goes stale. Edge caches the resolution for ~12h.
     -->
-    <script src="https://cdn.jsdelivr.net/npm/golem-graph@1.0.1/dist/golem.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/golem-graph@1/dist/golem.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
