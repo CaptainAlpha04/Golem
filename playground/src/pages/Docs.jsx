@@ -22,6 +22,8 @@ const SECTIONS = [
   { id: 'api',          label: 'JavaScript API',         group: 'For Developers' },
   { id: 'bundling',     label: 'Bundling / CDN',         group: 'For Developers' },
   { id: 'publishing',   label: 'Publishing to npm',      group: 'For Developers' },
+  { id: 'releasing',    label: 'Releasing',              group: 'For Developers' },
+  { id: 'testing',      label: 'Testing',                group: 'For Developers' },
 ];
 
 function groupBy(arr, key) {
@@ -933,7 +935,7 @@ range: [-2, 2]
           </p>
           <Code>{`{
   "name": "golem-graph",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Declarative SVG graphing engine for mathematical equations",
   "main":    "dist/golem.js",
   "module":  "src/bundle-entry.js",
@@ -966,57 +968,154 @@ range: [-2, 2]
           <Code>{`npm run build        # → dist/golem.js   (readable)
 npm run build:min    # → dist/golem.min.js (minified)`}</Code>
 
-          <h3>3. Create .npmignore</h3>
-          <p>
-            Prevent development files from being shipped in the package:
-          </p>
-          <Code>{`playground/
-demo/
-docs/
-.vscode/
-*.test.js`}</Code>
+          <h3>3. CDN URLs after publish</h3>
+          <Code>{`<!-- Latest 1.x — picks up releases automatically -->
+<script src="https://cdn.jsdelivr.net/npm/golem-graph@1/dist/golem.min.js"></script>
 
-          <h3>4. Dry run — verify what will be published</h3>
-          <Code>{`npm publish --dry-run
-# Inspect the file list. Only dist/, src/, integrations/, package.json
-# and README.md should appear.`}</Code>
-
-          <h3>5. Publish</h3>
-          <Code>{`npm login                        # first time only
-npm publish --access public      # publish (or republish a new version)`}</Code>
-          <Callout>
-            If <Inline>golem-graph</Inline> is already taken on the registry, publish
-            under a scoped name: set{' '}
-            <Inline>"name": "@yourscope/golem-graph"</Inline> in{' '}
-            <Inline>package.json</Inline> and re-run with{' '}
-            <Inline>--access public</Inline>.
-          </Callout>
-
-          <h3>6. CDN URLs after publish</h3>
-          <Code>{`<!-- jsDelivr (recommended — global CDN, SRI hash support) -->
-<script src="https://cdn.jsdelivr.net/npm/golem-graph/dist/golem.min.js"></script>
+<!-- Or pin exactly, to upgrade deliberately -->
+<script src="https://cdn.jsdelivr.net/npm/golem-graph@1.1.0/dist/golem.min.js"></script>
 
 <!-- unpkg (npm mirror) -->
-<script src="https://unpkg.com/golem-graph/dist/golem.min.js"></script>
+<script src="https://unpkg.com/golem-graph@1/dist/golem.min.js"></script>`}</Code>
+          <Callout>
+            <Inline>@1</Inline> is a semver range, not an exact pin — jsDelivr
+            serves the newest 1.x and never a breaking 2.0. This playground uses
+            that form, so a release reaches it without anyone editing a version
+            number. Edge caches resolve the range within roughly 12 hours.
+          </Callout>
+        </section>
 
-<!-- Pin an exact version to avoid silent breaking changes -->
-<script src="https://cdn.jsdelivr.net/npm/golem-graph@1.0.0/dist/golem.min.js"></script>`}</Code>
-
-          <h3>7. Versioning</h3>
-          <p>Follow semantic versioning: <Inline>MAJOR.MINOR.PATCH</Inline></p>
+        {/* ── Releasing ─────────────────────────────────────────────────── */}
+        <section id="releasing">
+          <h2>Releasing</h2>
+          <p>
+            Versions are <strong>not</strong> bumped by hand.{' '}
+            <Inline>release-please</Inline> derives them from{' '}
+            <a href="https://www.conventionalcommits.org" target="_blank" rel="noreferrer">
+              Conventional Commit
+            </a>{' '}
+            messages on <Inline>main</Inline>.
+          </p>
           <table className="docs-table">
-            <thead><tr><th>Change type</th><th>Command</th><th>Example</th></tr></thead>
+            <thead><tr><th>Prefix</th><th>Effect on the next release</th></tr></thead>
             <tbody>
               {[
-                ['Bug fix — no API change',            'npm version patch', '1.0.0 → 1.0.1'],
-                ['New feature — backwards-compatible', 'npm version minor', '1.0.1 → 1.1.0'],
-                ['Breaking API change',                'npm version major', '1.1.0 → 2.0.0'],
-              ].map(([c, cmd, ex]) => <tr key={c}><td>{c}</td><td><code>{cmd}</code></td><td>{ex}</td></tr>)}
+                ['fix:',                        'Patch — 1.1.0 → 1.1.1'],
+                ['feat:',                       'Minor — 1.1.0 → 1.2.0'],
+                ['feat!: / BREAKING CHANGE:',   'Major — 1.1.0 → 2.0.0'],
+                ['docs: refactor: perf:',       'Listed in the changelog, no bump on their own'],
+                ['chore: test: ci: build:',     'No release'],
+              ].map(([p, e]) => (
+                <tr key={p}><td><code>{p}</code></td><td>{e}</td></tr>
+              ))}
             </tbody>
           </table>
-          <Code>{`npm version patch
-git push --follow-tags
-npm publish --access public`}</Code>
+
+          <h3>The flow</h3>
+          <Code>{`push a feat:/fix: commit to main
+        │
+        ▼
+.github/workflows/release.yml → release-please
+        │
+        ▼
+opens or updates a PR: "chore(release): 1.2.0"
+  • package.json version bumped
+  • CHANGELOG.md regenerated
+        │
+        ▼  (you merge it — the only gate)
+tag v1.2.0 + GitHub release
+        │
+        ▼
+publish job: npm ci → npm publish
+  prepublishOnly runs the tests and both builds first`}</Code>
+          <p>
+            Nothing reaches the registry without merging that pull request. Batch
+            several features into one release by simply leaving it open.
+          </p>
+
+          <h3>Authentication</h3>
+          <p>
+            Publishing uses{' '}
+            <a href="https://docs.npmjs.com/trusted-publishers" target="_blank" rel="noreferrer">
+              npm trusted publishing
+            </a>. The workflow requests an OIDC token and npm verifies the workflow
+            identity directly, so there is <strong>no npm token stored in the
+            repository</strong> and every published version carries a{' '}
+            <strong>provenance attestation</strong> linking it to the commit and
+            workflow run that built it.
+          </p>
+          <Callout>
+            The publish step deliberately sets no <Inline>NODE_AUTH_TOKEN</Inline>,
+            and upgrades npm first — trusted publishing needs npm ≥ 11.5.1, which
+            is newer than the npm bundled with Node 22.
+          </Callout>
+
+          <h3>Continuous integration</h3>
+          <p>
+            <Inline>.github/workflows/ci.yml</Inline> runs on every push and pull
+            request to <Inline>main</Inline>:
+          </p>
+          <ul>
+            <li>the full test suite on Node 20, 22, and 24;</li>
+            <li>both bundle builds;</li>
+            <li>
+              two guards on the built bundle — that it still registers{' '}
+              <Inline>{'<golem-graph>'}</Inline>, and that it loads without a DOM.
+              Since <Inline>dist/</Inline> is git-ignored, nothing else would catch
+              a bundle that builds but is broken;
+            </li>
+            <li>a separate job building this playground.</li>
+          </ul>
+        </section>
+
+        {/* ── Testing ───────────────────────────────────────────────────── */}
+        <section id="testing">
+          <h2>Testing</h2>
+          <p>
+            The suite uses Node&rsquo;s built-in runner — no test framework, and no
+            dependencies beyond the optional Math.js peer.
+          </p>
+          <Code>{`npm test`}</Code>
+          <table className="docs-table">
+            <thead><tr><th>File</th><th>Covers</th></tr></thead>
+            <tbody>
+              {[
+                ['test/helpers.js',        'Fake DOM and stub Math.js shared by the suites'],
+                ['test/parser.test.js',    'Text block → raw config: titles, labels, piecewise blocks'],
+                ['test/compiler.test.js',  'Style normalisation, aria-label fallback order, title threading'],
+                ['test/render.test.js',    'SVG output: titles, legends, transparency, label clamping, sampling'],
+                ['test/e2e.test.js',       'The whole pipeline driven by the real Math.js'],
+              ].map(([f, c]) => (
+                <tr key={f}><td><code>{f}</code></td><td>{c}</td></tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3>The fake DOM</h3>
+          <p>
+            <Inline>Golem.render()</Inline> needs{' '}
+            <Inline>document.createElementNS</Inline>. Rather than pull in jsdom — a
+            heavy dependency for an otherwise dependency-free package —{' '}
+            <Inline>test/helpers.js</Inline> provides only the DOM methods the
+            renderer actually uses, plus <Inline>find(tag)</Inline> and{' '}
+            <Inline>all()</Inline> helpers so assertions can walk the rendered tree.
+          </p>
+          <p>
+            Renderer tests pass a fake element straight to{' '}
+            <Inline>Golem.render()</Inline> as the target, exercising the
+            non-string branch and bypassing <Inline>querySelector</Inline>.
+          </p>
+
+          <h3>End-to-end tests</h3>
+          <p>
+            Stubs cannot catch integration bugs, so{' '}
+            <Inline>test/e2e.test.js</Inline> drives the real pipeline —{' '}
+            <Inline>parse</Inline> → <Inline>compile</Inline> →{' '}
+            <Inline>render</Inline> — with the actual Math.js and asserts on the
+            rendered SVG. Math.js is an optional peer dependency, so those tests
+            skip cleanly when it is absent and the suite stays runnable with
+            nothing installed.
+          </p>
         </section>
 
       </main>
